@@ -1,0 +1,74 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Card from '@/components/ui/Card.astro';
+import { CATEGORIES } from '@/data/site';
+
+// Tutti i tutorial non in bozza, ordinati per data decrescente
+const tutorials = (await getCollection('tutorial', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+---
+
+<BaseLayout
+  title="Tutorial"
+  description="Tutte le guide passo passo: smartphone, PC, WhatsApp e molto altro. Spiegate in modo semplice per chi inizia da zero."
+>
+  <div class="mx-auto max-w-6xl px-4 py-12">
+    <h1 class="font-heading text-3xl md:text-4xl text-brand-blue">Tutti i tutorial</h1>
+    <p class="mt-3 text-brand-mid">
+      Guide semplici e chiare. Scegli l'argomento che ti interessa e seguile passo dopo passo.
+    </p>
+
+    <!-- Filtri categoria -->
+    <nav class="mt-8 flex flex-wrap gap-2" aria-label="Filtra per categoria">
+      <a
+        href="/tutorial"
+        class="rounded-full bg-brand-blue text-white px-4 py-1.5 text-sm font-medium"
+      >Tutti</a>
+      {
+        Object.entries(CATEGORIES).map(([key, c]) => (
+          <a
+            href={`/categoria/${key}`}
+            class="rounded-full border border-brand-blue text-brand-blue px-4 py-1.5 text-sm font-medium hover:bg-brand-blue-light transition-colors"
+          >
+            {c.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    {tutorials.length === 0 && (
+      <p class="mt-12 text-center text-brand-mid">
+        Nessun tutorial ancora disponibile. Torna presto!
+      </p>
+    )}
+
+    <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        tutorials.map((tutorial) => {
+          const cat = CATEGORIES[tutorial.data.category];
+          return (
+            <Card href={`/tutorial/${tutorial.slug}`}>
+              <p class="text-xs font-semibold uppercase tracking-wide text-brand-orange">
+                <span aria-hidden="true">{cat.emoji}</span> {cat.label}
+              </p>
+              <h2 class="mt-2 font-heading text-lg text-brand-dark leading-snug">
+                {tutorial.data.title}
+              </h2>
+              <p class="mt-2 text-sm text-brand-mid line-clamp-2">
+                {tutorial.data.description}
+              </p>
+              <p class="mt-3 text-xs text-brand-mid">
+                {tutorial.data.pubDate.toLocaleDateString('it-IT', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </p>
+            </Card>
+          );
+        })
+      }
+    </div>
+  </div>
+</BaseLayout>

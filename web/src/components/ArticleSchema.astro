@@ -1,0 +1,51 @@
+---
+/**
+ * ArticleSchema — JSON-LD Article/BlogPosting.
+ * Vedi docs/10-SEO-AEO.md e skill seo-aeo-structured-data.
+ */
+import { SITE } from '@/data/site';
+
+interface Props {
+  title: string;
+  description: string;
+  url: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  image?: string;
+  authorName?: string;
+}
+
+const {
+  title,
+  description,
+  url,
+  pubDate,
+  updatedDate,
+  image = SITE.ogImage,
+  authorName = SITE.creator,
+} = Astro.props;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  url: new URL(url, SITE.url).href,
+  datePublished: pubDate.toISOString(),
+  dateModified: (updatedDate ?? pubDate).toISOString(),
+  image: new URL(image, SITE.url).href,
+  author: {
+    '@type': 'Person',
+    name: authorName,
+    url: SITE.url,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: SITE.name,
+    url: SITE.url,
+  },
+  inLanguage: 'it-IT',
+};
+---
+
+<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />

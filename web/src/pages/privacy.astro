@@ -1,0 +1,46 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE } from '@/data/site';
+---
+
+<BaseLayout
+  title="Privacy Policy"
+  description="Informativa sulla privacy del sito Il Tutor Digitale — come vengono trattati i tuoi dati."
+  noindex={true}
+>
+  <div class="mx-auto max-w-3xl px-4 py-12 prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-brand-dark">
+    <h1>Privacy Policy</h1>
+    <p><em>Ultimo aggiornamento: giugno 2025</em></p>
+
+    <h2>Titolare del trattamento</h2>
+    <p>
+      Titolare del trattamento è {SITE.creator}, raggiungibile all'indirizzo
+      <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+    </p>
+
+    <h2>Dati raccolti</h2>
+    <p>
+      Questo sito non raccoglie dati personali direttamente. Non utilizza cookie di profilazione.
+      I log del server web possono contenere indirizzi IP per sicurezza e diagnostica.
+    </p>
+
+    <h2>Link di affiliazione</h2>
+    <p>
+      Alcune pagine contengono link di affiliazione (ad es. Amazon). Se acquisti tramite questi link,
+      ricevo una piccola commissione senza costi aggiuntivi per te.
+      Tutti i link affiliati sono chiaramente indicati.
+    </p>
+
+    <h2>Servizi di terze parti</h2>
+    <p>
+      Il sito può incorporare video di YouTube e raccogliere statistiche anonime di navigazione
+      tramite servizi conformi al GDPR. Nessun dato viene venduto a terzi.
+    </p>
+
+    <h2>I tuoi diritti (GDPR)</h2>
+    <p>
+      Hai diritto di accesso, rettifica, cancellazione e opposizione al trattamento.
+      Per esercitare i tuoi diritti scrivi a <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+    </p>
+  </div>
+</BaseLayout>

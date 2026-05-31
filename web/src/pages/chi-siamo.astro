@@ -1,0 +1,55 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE } from '@/data/site';
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: SITE.creator,
+  url: SITE.url,
+  email: SITE.email,
+  description: 'Creator di Il Tutor Digitale: tutorial di tecnologia semplici e chiari per italiani over 45.',
+  sameAs: [],
+};
+---
+
+<BaseLayout
+  title="Chi siamo"
+  description="Il Tutor Digitale è il progetto di Giuseppe: tutorial di tecnologia semplici e chiari per chi vuole imparare senza fretta e senza gergo tecnico."
+>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(personSchema)} />
+
+  <div class="mx-auto max-w-3xl px-4 py-12">
+    <h1 class="font-heading text-3xl md:text-4xl text-brand-blue">Chi siamo</h1>
+
+    <!-- In breve AEO -->
+    <p class="mt-5 text-xl text-brand-dark">
+      Il Tutor Digitale è il progetto di <strong>{SITE.creator}</strong>:
+      guide di tecnologia scritte in italiano semplice, pensate per chi ha più di 45 anni
+      e vuole imparare a usare smartphone, PC e internet senza paura.
+    </p>
+
+    <div class="mt-10 prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-brand-dark">
+      <h2>Perché questo progetto</h2>
+      <p>
+        Quante volte hai sentito parole come "aggiorna il firmware" o "vai nelle impostazioni avanzate"
+        e non sapevi da dove iniziare? Il Tutor Digitale esiste per questo: spiegare la tecnologia
+        come farebbe un amico paziente, passo dopo passo, senza saltare nulla.
+      </p>
+
+      <h2>Come funziona</h2>
+      <p>
+        Ogni guida è strutturata in passi numerati, con screenshot quando serve,
+        e si conclude sempre con una sezione di domande e risposte sulle difficoltà più comuni.
+        Puoi seguire i tutorial sul sito, oppure guardare i video sul canale YouTube.
+      </p>
+
+      <h2>Contattami</h2>
+      <p>
+        Hai una domanda, hai trovato un errore, o vuoi suggerire un argomento?
+        Scrivi a <a href={`mailto:${SITE.email}`}>{SITE.email}</a> —
+        rispondo a tutti i messaggi.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

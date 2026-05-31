@@ -1,0 +1,39 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE } from '@/data/site';
+---
+
+<BaseLayout
+  title="Note legali"
+  description="Note legali del sito Il Tutor Digitale."
+  noindex={true}
+>
+  <div class="mx-auto max-w-3xl px-4 py-12 prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-brand-dark">
+    <h1>Note legali</h1>
+
+    <h2>Proprietà del sito</h2>
+    <p>
+      {SITE.name} — <a href={SITE.url}>{SITE.url}</a><br />
+      Gestito da {SITE.creator} · <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+    </p>
+
+    <h2>Contenuti</h2>
+    <p>
+      I contenuti del sito sono a scopo informativo e divulgativo. Pur curando l'accuratezza
+      delle informazioni, non si garantisce l'assenza di errori.
+    </p>
+
+    <h2>Link di affiliazione (disclosure)</h2>
+    <p>
+      Questo sito partecipa al Programma di affiliazione Amazon e ad altri programmi similari.
+      I link contrassegnati con "(affiliato)" o equivalente generano una commissione
+      in caso di acquisto, senza alcun costo aggiuntivo per il lettore.
+    </p>
+
+    <h2>Copyright</h2>
+    <p>
+      © {new Date().getFullYear()} {SITE.name}. Tutti i diritti riservati.
+      È vietata la riproduzione dei contenuti senza citazione della fonte.
+    </p>
+  </div>
+</BaseLayout>

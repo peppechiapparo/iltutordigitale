@@ -1,0 +1,28 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE } from '@/data/site';
+---
+
+<BaseLayout
+  title="Contatti"
+  description="Contatta Il Tutor Digitale: scrivi per domande, suggerimenti o segnalazioni."
+>
+  <div class="mx-auto max-w-2xl px-4 py-12">
+    <h1 class="font-heading text-3xl md:text-4xl text-brand-blue">Contatti</h1>
+    <p class="mt-4 text-brand-mid">
+      Hai una domanda? Vuoi suggerire un argomento o hai trovato un errore in una guida?
+      Scrivimi — rispondo a tutti.
+    </p>
+
+    <div class="mt-8 rounded-2xl border border-brand-blue-light bg-white p-8 shadow-sm">
+      <p class="text-lg">
+        Email: <a href={`mailto:${SITE.email}`} class="text-brand-blue underline font-semibold">
+          {SITE.email}
+        </a>
+      </p>
+      <p class="mt-4 text-brand-mid text-sm">
+        Cerco di rispondere entro 24-48 ore nei giorni feriali.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,99 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ArticleSchema from '@/components/ArticleSchema.astro';
+import FaqBlock from '@/components/FaqBlock.astro';
+import { CATEGORIES } from '@/data/site';
+
+export async function getStaticPaths() {
+  const tutorials = await getCollection('tutorial', ({ data }) => !data.draft);
+  return tutorials.map((entry) => ({ params: { slug: entry.slug }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const { title, description, pubDate, updatedDate, heroImage, category, faq } = entry.data;
+const cat = CATEGORIES[category];
+const url = `/tutorial/${entry.slug}`;
+---
+
+<BaseLayout {title} {description} image={heroImage}>
+  <ArticleSchema {title} {description} {url} {pubDate} {updatedDate} image={heroImage} />
+
+  <article class="mx-auto max-w-3xl px-4 py-12" itemscope itemtype="https://schema.org/Article">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-brand-mid mb-6" aria-label="Navigazione breadcrumb">
+      <a href="/" class="hover:text-brand-blue">Home</a>
+      <span aria-hidden="true"> › </span>
+      <a href="/tutorial" class="hover:text-brand-blue">Tutorial</a>
+      <span aria-hidden="true"> › </span>
+      <a href={`/categoria/${category}`} class="hover:text-brand-blue">{cat.label}</a>
+    </nav>
+
+    <!-- Categoria badge -->
+    <p class="text-sm font-semibold uppercase tracking-wide text-brand-orange">
+      <span aria-hidden="true">{cat.emoji}</span> {cat.label}
+    </p>
+
+    <!-- Titolo -->
+    <h1 class="mt-2 font-heading text-3xl md:text-4xl text-brand-dark" itemprop="headline">
+      {title}
+    </h1>
+
+    <!-- Data -->
+    <p class="mt-3 text-sm text-brand-mid">
+      Pubblicato il{' '}
+      <time datetime={pubDate.toISOString()} itemprop="datePublished">
+        {pubDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
+      </time>
+      {updatedDate && (
+        <>
+          {' · Aggiornato il '}
+          <time datetime={updatedDate.toISOString()} itemprop="dateModified">
+            {updatedDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </time>
+        </>
+      )}
+    </p>
+
+    <!-- Descrizione breve AEO ("In breve") -->
+    <div class="mt-6 rounded-xl bg-brand-blue-light border-l-4 border-brand-blue p-5">
+      <p class="font-semibold text-brand-blue text-sm uppercase tracking-wide mb-1">In breve</p>
+      <p class="text-brand-dark" itemprop="description">{description}</p>
+    </div>
+
+    <!-- Immagine hero -->
+    {heroImage && (
+      <img
+        src={heroImage}
+        alt={title}
+        class="mt-8 w-full rounded-2xl"
+        width="800"
+        height="450"
+        itemprop="image"
+      />
+    )}
+
+    <!-- Corpo articolo -->
+    <div
+      class="prose prose-lg mt-8 max-w-none
+             prose-headings:font-heading prose-headings:text-brand-dark
+             prose-a:text-brand-blue prose-a:underline
+             prose-strong:text-brand-dark"
+      itemprop="articleBody"
+    >
+      <Content />
+    </div>
+
+    <!-- FAQ (se presenti nel frontmatter) -->
+    {faq && faq.length > 0 && <FaqBlock {faq} />}
+
+    <!-- Navigazione fine articolo -->
+    <div class="mt-12 pt-8 border-t border-brand-blue-light flex flex-wrap gap-4">
+      <a href="/tutorial" class="text-brand-blue hover:underline">← Tutti i tutorial</a>
+      <a href={`/categoria/${category}`} class="text-brand-blue hover:underline">
+        Altri tutorial su {cat.label} →
+      </a>
+    </div>
+  </article>
+</BaseLayout>

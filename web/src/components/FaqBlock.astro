@@ -1,0 +1,46 @@
+---
+/**
+ * FaqBlock — visualizza le FAQ con JSON-LD FAQPage.
+ * Le domande vengono passate come prop faq: { q: string; a: string }[].
+ * Vedi docs/10-SEO-AEO.md.
+ */
+interface Faq {
+  q: string;
+  a: string;
+}
+
+interface Props {
+  faq: Faq[];
+}
+
+const { faq } = Astro.props;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.a,
+    },
+  })),
+};
+---
+
+<section class="mt-12" aria-labelledby="faq-heading">
+  <h2 id="faq-heading" class="font-heading text-2xl text-brand-blue">Domande frequenti</h2>
+  <dl class="mt-6 divide-y divide-brand-blue-light">
+    {
+      faq.map((item) => (
+        <div class="py-5">
+          <dt class="font-semibold text-lg text-brand-dark">{item.q}</dt>
+          <dd class="mt-2 text-brand-mid">{item.a}</dd>
+        </div>
+      ))
+    }
+  </dl>
+</section>
+
+<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
