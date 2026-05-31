@@ -1,0 +1,29 @@
+---
+/**
+ * Button — primario (arancione), secondario (blu), outline.
+ * Tocco minimo 48px per accessibilità (docs/06-BRAND.md).
+ */
+interface Props {
+  href?: string;
+  variant?: 'primary' | 'secondary' | 'outline';
+  class?: string;
+}
+
+const { href, variant = 'primary', class: className = '' } = Astro.props;
+
+const base =
+  'inline-flex items-center justify-center gap-2 min-h-[48px] px-6 py-3 rounded-xl font-semibold text-lg transition-colors focus-visible:outline-3';
+
+const variants: Record<string, string> = {
+  primary: 'bg-brand-orange text-brand-dark hover:bg-brand-orange-dk hover:text-white',
+  secondary: 'bg-brand-blue text-white hover:bg-brand-blue-mid',
+  outline: 'border-2 border-brand-blue text-brand-blue hover:bg-brand-blue-light',
+};
+
+const cls = `${base} ${variants[variant]} ${className}`;
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag class={cls} {href}>
+  <slot />
+</Tag>

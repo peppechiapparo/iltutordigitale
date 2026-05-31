@@ -1,0 +1,187 @@
+"""FastAPI dashboard + control endpoints."""
+
+from __future__ import annotations
+
+import json
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Annotated, AsyncIterator
+
+from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi.responses import HTMLResponse, JSONResponse
+
+from .. import __version__
+from ..adapters.llm import build_llm_client
+from ..adapters.notifier import build_notifier
+from ..agents.seo_monitor import SEOMonitorAgent
+from ..core.config import Settings, get_settings
+from ..core.db import Database
+from ..core.logging import configure_logging, get_logger
+from ..core.scheduler import build_scheduler
+
+log = get_logger(__name__)
+
+# In development: relative to source tree. In production (installed package): /app/migrations.
+_src_migrations = Path(__file__).resolve().parents[3] / "migrations"
+MIGRATIONS_DIR = _src_migrations if _src_migrations.exists() else Path("/app/migrations")
+
+
+def _require_token(settings: Settings, authorization: str | None) -> None:
+    if not settings.shan_api_token:
+        return
+    expected = f"Bearer {settings.shan_api_token}"
+    if authorization != expected:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    configure_logging(settings.shan_log_level)
+    settings.ensure_dirs()
+
+    db = Database(settings.db_path, MIGRATIONS_DIR)
+    db.init()
+
+    notifier = build_notifier(settings.telegram_bot_token, settings.telegram_chat_id)
+
+    llm_client = build_llm_client(
+        settings.llm_provider,
+        settings.anthropic_api_key,
+        settings.anthropic_model,
+        settings.openai_api_key,
+        settings.openai_model,
+        settings.github_token,
+        settings.github_model,
+    )
+    app.state.llm = llm_client
+
+    scheduler = build_scheduler(settings, db, notifier, llm_client)
+    scheduler.start()
+    log.info("shan_started", version=__version__, env=settings.shan_env)
+
+    app.state.settings = settings
+    app.state.db = db
+    app.state.notifier = notifier
+    app.state.scheduler = scheduler
+
+    try:
+        yield
+    finally:
+        scheduler.shutdown(wait=False)
+        log.info("shan_stopped")
+
+
+app = FastAPI(
+    title="Shan Growth Agent",
+    version=__version__,
+    description="Agentic SEO / content / social monitor for Scuola Kung Fu Maestro Cipriani.",
+    lifespan=lifespan,
+)
+
+
+def get_db() -> Database:
+    return app.state.db  # type: ignore[no-any-return]
+
+
+DbDep = Annotated[Database, Depends(get_db)]
+AuthHeader = Annotated[str | None, Header(alias="Authorization")]
+
+
+@app.get("/healthz")
+def healthz() -> dict:
+    return {"status": "ok", "version": __version__}
+
+
+@app.get("/api/runs")
+def list_runs(db: DbDep, authorization: AuthHeader = None, limit: int = 50) -> JSONResponse:
+    _require_token(app.state.settings, authorization)
+    limit = max(1, min(limit, 500))
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT id, agent, started_at, finished_at, status, summary"
+            " FROM agent_runs ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return JSONResponse([dict(r) for r in rows])
+
+
+@app.get(
+    "/api/runs/{run_id}",
+    responses={404: {"description": "Run not found"}},
+)
+def get_run(run_id: int, db: DbDep, authorization: AuthHeader = None) -> JSONResponse:
+    _require_token(app.state.settings, authorization)
+    with db.connect() as conn:
+        run = conn.execute("SELECT * FROM agent_runs WHERE id = ?", (run_id,)).fetchone()
+        if not run:
+            raise HTTPException(status_code=404, detail="run not found")
+        findings = conn.execute(
+            "SELECT severity, code, message, url, payload FROM findings WHERE run_id = ?",
+            (run_id,),
+        ).fetchall()
+    payload = dict(run)
+    payload["findings"] = [
+        {**dict(f), "payload": json.loads(f["payload"]) if f["payload"] else None}
+        for f in findings
+    ]
+    return JSONResponse(payload)
+
+
+@app.post("/api/agents/seo_monitor/run")
+def trigger_seo_monitor(db: DbDep, authorization: AuthHeader = None) -> JSONResponse:
+    """Manual on-demand run of the SEO monitor."""
+    _require_token(app.state.settings, authorization)
+    settings: Settings = app.state.settings
+    agent = SEOMonitorAgent(db, app.state.llm, settings.site_url, settings.site_instagram_handle)
+    report = agent.run()
+    return JSONResponse({
+        "agent": report.agent,
+        "status": report.status,
+        "summary": report.summary,
+        "findings": [
+            {"severity": f.severity, "code": f.code, "message": f.message, "url": f.url}
+            for f in report.findings
+        ],
+    })
+
+
+@app.get("/", response_class=HTMLResponse)
+def dashboard(db: DbDep) -> HTMLResponse:
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT id, agent, started_at, status, summary"
+            " FROM agent_runs ORDER BY id DESC LIMIT 25"
+        ).fetchall()
+    settings: Settings = app.state.settings
+    items = "".join(
+        f"<tr><td>{r['id']}</td><td>{r['agent']}</td><td>{r['started_at']}</td>"
+        f"<td class='s-{r['status']}'>{r['status']}</td><td>{r['summary'] or ''}</td></tr>"
+        for r in rows
+    )
+    return HTMLResponse(f"""<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Shan Growth Agent</title>
+  <style>
+    body {{ font-family: ui-sans-serif, system-ui, sans-serif; margin: 2rem; color: #222; }}
+    h1 {{ margin: 0 0 .5rem 0; }}
+    .sub {{ color: #666; margin-bottom: 1.5rem; }}
+    table {{ border-collapse: collapse; width: 100%; }}
+    th, td {{ text-align: left; padding: .5rem .75rem; border-bottom: 1px solid #eee; }}
+    th {{ background: #fafafa; font-weight: 600; }}
+    .s-ok {{ color: #1a7f37; font-weight: 600; }}
+    .s-warning {{ color: #b08800; font-weight: 600; }}
+    .s-error, .s-critical {{ color: #b42318; font-weight: 600; }}
+  </style>
+</head>
+<body>
+  <h1>Shan Growth Agent <small style="font-size:.6em;color:#888">v{__version__}</small></h1>
+  <div class="sub">Target: <a href="{settings.site_url}">{settings.site_url}</a></div>
+  <table>
+    <thead><tr><th>#</th><th>Agent</th><th>Started</th><th>Status</th><th>Summary</th></tr></thead>
+    <tbody>{items or '<tr><td colspan=5><em>No runs yet.</em></td></tr>'}</tbody>
+  </table>
+</body>
+</html>""")

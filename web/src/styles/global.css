@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Font locali (vedi docs/06-BRAND.md) ───────────────────────────────── */
+/* I file .woff2 vanno in /public/fonts/. Finché non sono presenti, il
+   fallback system-ui garantisce comunque il rendering. */
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* ── Variabili brand ───────────────────────────────────────────────────── */
+:root {
+  --color-primary: #185fa5;
+  --color-accent: #ef9f27;
+  --color-dark: #2c2c2a;
+  --color-bg: #f1efe8;
+}
+
+/* ── Base accessibile (pubblico over 45) ───────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--color-dark);
+  background: #ffffff;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Focus sempre visibile — mai rimuovere l'outline */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Skip-link accessibilità */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: 100;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 0 0 0.5rem 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* Rispetta chi preferisce meno animazioni */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

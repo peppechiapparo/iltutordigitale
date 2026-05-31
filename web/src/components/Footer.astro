@@ -1,0 +1,45 @@
+---
+import { SITE, CATEGORIES } from '@/data/site';
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-brand-dark text-brand-bg mt-16">
+  <div class="mx-auto max-w-6xl px-4 py-10 grid gap-8 md:grid-cols-3">
+    <div>
+      <p class="font-heading text-lg text-white">{SITE.name}</p>
+      <p class="mt-2 text-brand-mid">{SITE.description}</p>
+    </div>
+
+    <nav aria-label="Categorie">
+      <p class="font-semibold text-white">Argomenti</p>
+      <ul class="mt-2 space-y-1">
+        {
+          Object.entries(CATEGORIES).map(([key, c]) => (
+            <li>
+              <a href={`/categoria/${key}`} class="hover:text-white transition-colors">
+                {c.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <nav aria-label="Informazioni">
+      <p class="font-semibold text-white">Informazioni</p>
+      <ul class="mt-2 space-y-1">
+        <li><a href="/chi-siamo" class="hover:text-white">Chi siamo</a></li>
+        <li><a href="/contatti" class="hover:text-white">Contatti</a></li>
+        <li><a href="/privacy" class="hover:text-white">Privacy</a></li>
+        <li><a href="/note-legali" class="hover:text-white">Note legali</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="border-t border-brand-mid/30">
+    <p class="mx-auto max-w-6xl px-4 py-4 text-sm text-brand-mid">
+      © {year} {SITE.name} · A cura di {SITE.creator} ·
+      <a href={`mailto:${SITE.email}`} class="hover:text-white">{SITE.email}</a>
+    </p>
+  </div>
+</footer>

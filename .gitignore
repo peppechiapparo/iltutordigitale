@@ -1,0 +1,30 @@
+# Dipendenze
+node_modules/
+
+# Build Astro
+web/dist/
+web/.astro/
+dist/
+.astro/
+
+# Variabili d'ambiente (mai committare segreti)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Log e sistema
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+
+# Content engine (Fase 4)
+engine/.venv/
+engine/**/__pycache__/
+engine/data/*.db
+engine/data/*.db-*

@@ -1,0 +1,23 @@
+services:
+  shan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shan-growth-agent:0.1.0
+    container_name: shan
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8765:8765"   # dashboard, bind to LAN only via host firewall
+    volumes:
+      - ./data:/app/data
+      - ./secrets:/app/secrets:ro
+    # Pi-friendly resource caps
+    mem_limit: 512m
+    cpus: "1.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

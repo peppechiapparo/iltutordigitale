@@ -1,0 +1,72 @@
+---
+import { SITE, CATEGORIES } from '@/data/site';
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? path === '/' : path.startsWith(href);
+---
+
+<header class="sticky top-0 z-50 bg-white border-b border-brand-blue-light shadow-sm">
+  <nav class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between" aria-label="Principale">
+    <a href="/" class="flex items-center gap-2 font-heading text-xl text-brand-blue">
+      <span aria-hidden="true">🎓</span>
+      <span>{SITE.name}</span>
+    </a>
+
+    <!-- Menu desktop -->
+    <ul class="hidden md:flex items-center gap-6">
+      {
+        Object.entries(CATEGORIES).map(([key, c]) => (
+          <li>
+            <a
+              href={`/categoria/${key}`}
+              class:list={[
+                'py-2 hover:text-brand-blue transition-colors',
+                isActive(`/categoria/${key}`) && 'text-brand-blue font-semibold',
+              ]}
+            >
+              {c.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <!-- Toggle mobile -->
+    <button
+      id="menu-toggle"
+      class="md:hidden p-2 text-brand-dark"
+      aria-label="Apri il menu"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+    >
+      <span aria-hidden="true" class="text-2xl">☰</span>
+    </button>
+  </nav>
+
+  <!-- Menu mobile -->
+  <ul id="mobile-menu" class="hidden md:hidden border-t border-brand-blue-light px-4 pb-4">
+    {
+      Object.entries(CATEGORIES).map(([key, c]) => (
+        <li>
+          <a
+            href={`/categoria/${key}`}
+            class="block py-3 text-lg border-b border-brand-bg last:border-0"
+          >
+            <span aria-hidden="true">{c.emoji}</span> {c.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</header>
+
+<script>
+  const toggle = document.getElementById('menu-toggle');
+  const menu = document.getElementById('mobile-menu');
+  toggle?.addEventListener('click', () => {
+    const open = menu?.classList.toggle('hidden') === false;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Chiudi il menu' : 'Apri il menu');
+  });
+</script>

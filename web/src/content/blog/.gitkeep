@@ -1,0 +1,5 @@
+# Cartella articoli del blog
+
+I file Markdown degli articoli vanno qui. Lo schema dei campi è definito in
+`src/content/config.ts`. Questo file serve solo a mantenere la cartella nel
+repository ed è ignorato da Astro (non inizia con un'estensione `.md` di contenuto valido a livello di slug perché privo di frontmatter).

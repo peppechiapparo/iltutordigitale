@@ -1,0 +1,21 @@
+---
+/**
+ * Card — contenitore semplice per anteprime tutorial/articoli.
+ */
+interface Props {
+  href?: string;
+  class?: string;
+}
+const { href, class: className = '' } = Astro.props;
+const Tag = href ? 'a' : 'div';
+const interactive = href
+  ? 'hover:shadow-md hover:-translate-y-0.5 transition-all'
+  : '';
+---
+
+<Tag
+  {href}
+  class={`block rounded-2xl border border-brand-blue-light bg-white p-5 shadow-sm ${interactive} ${className}`}
+>
+  <slot />
+</Tag>
