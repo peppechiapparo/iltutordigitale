@@ -145,7 +145,7 @@ class CalendarAgent(LLMAgent):
         """Legge i topic degli ultimi 14 giorni dal DB."""
         cutoff = (date.today() - timedelta(days=14)).isoformat()
         try:
-            with self.db.connect() as conn:
+            with self._db.connect() as conn:
                 rows = conn.execute(
                     "SELECT day, topic FROM editorial_calendar WHERE date >= ? ORDER BY date DESC",
                     (cutoff,),
@@ -166,17 +166,17 @@ class CalendarAgent(LLMAgent):
     def get_tools(self) -> list[dict]:
         return CALENDAR_TOOLS
 
-    def _handle_tool_call(self, tool_name: str, tool_input: dict) -> str:
-        """Intercetta save_calendar e persiste i dati nel DB."""
+    def _dispatch_tool(self, tool_name: str, tool_input: dict) -> str:
+        """Intercetta save_calendar (agent-specific) prima del dispatch globale."""
         if tool_name != "save_calendar":
-            return f"Tool '{tool_name}' non riconosciuto."
+            return super()._dispatch_tool(tool_name, tool_input)
 
         week_start = tool_input["week_start"]
         days = tool_input["days"]
         from datetime import datetime
         now = datetime.now().isoformat(timespec="seconds")
 
-        with self.db.connect() as conn:
+        with self._db.connect() as conn:
             for day_data in days:
                 conn.execute(
                     """INSERT INTO editorial_calendar
@@ -200,12 +200,12 @@ class CalendarAgent(LLMAgent):
         log.info("calendar_saved", week_start=week_start, days=len(days))
         return f"Calendario salvato: {len(days)} voci per settimana {week_start}."
 
-    def _build_summary(self, context: dict) -> str:
+    def _build_summary(self, status: object, findings: object) -> str:
         """Costruisce il testo del report finale (per Telegram e DB)."""
         if not self._calendar_result:
             return "Nessun calendario generato."
 
-        week = context.get("week_start", self._week_start)
+        week = self._week_start
         lines = [f"📅 *Calendario settimana {week}*\n"]
         for day in self._calendar_result:
             kw = ", ".join(day.get("keywords", []))

@@ -220,16 +220,11 @@ class LLMAgent(Agent):
                     )
                     break
                 else:
-                    dispatch_fn = TOOL_DISPATCH.get(tool_name)
-                    if dispatch_fn is None:
-                        result_content = json.dumps({"error": f"Unknown tool: {tool_name}"})
-                    else:
-                        try:
-                            result = dispatch_fn(tool_input)
-                            result_content = json.dumps(result)
-                        except Exception as exc:  # noqa: BLE001
-                            log.warning("tool_error", tool=tool_name, error=str(exc))
-                            result_content = json.dumps({"error": str(exc)})
+                    try:
+                        result_content = self._dispatch_tool(tool_name, tool_input)
+                    except Exception as exc:  # noqa: BLE001
+                        log.warning("tool_error", tool=tool_name, error=str(exc))
+                        result_content = json.dumps({"error": str(exc)})
 
                     tool_results.append({
                         "type": "tool_result",
@@ -256,6 +251,20 @@ class LLMAgent(Agent):
         status = self._overall_status(findings)
         summary = self._build_summary(status, findings)
         return status, summary, findings
+
+    def _dispatch_tool(self, tool_name: str, tool_input: dict) -> str:
+        """Dispatch a tool call to the appropriate implementation.
+
+        Override in subclasses to handle agent-specific tools before
+        falling back to the global TOOL_DISPATCH.
+        """
+        from ..tools.web_tools import TOOL_DISPATCH
+
+        dispatch_fn = TOOL_DISPATCH.get(tool_name)
+        if dispatch_fn is None:
+            return json.dumps({"error": f"Unknown tool: {tool_name}"})
+        result = dispatch_fn(tool_input)
+        return json.dumps(result)
 
     def _build_initial_message(self, context: dict) -> str:
         """Build the first user message. Override for custom context."""

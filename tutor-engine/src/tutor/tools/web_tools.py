@@ -21,7 +21,7 @@ from ..core.logging import get_logger
 
 log = get_logger(__name__)
 
-USER_AGENT = "ShanGrowthAgent/0.1 (+https://www.scuolakungfucipriani.it)"
+USER_AGENT = "TutorEngine/0.1 (+https://tutordigitale.com)"
 HTTP_TIMEOUT = 15.0
 
 # --- Tool JSON schemas (Anthropic format) ---

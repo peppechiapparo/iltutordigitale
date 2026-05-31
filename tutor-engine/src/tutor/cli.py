@@ -11,6 +11,8 @@ from . import __version__
 from .adapters.notifier import build_notifier
 from .agents.seo_monitor import SEOMonitorAgent
 from .agents.calendar_agent import CalendarAgent
+from .agents.content_agent import ContentAgent
+from .agents.weekly_report import WeeklyReportAgent
 from .core.config import get_settings
 from .core.db import Database
 from .core.logging import configure_logging, get_logger
@@ -76,6 +78,64 @@ def cmd_run_calendar(args: argparse.Namespace) -> int:
     return 0 if report.status in ("ok", "warning") else 1
 
 
+def cmd_run_content(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    settings.ensure_dirs()
+    db = Database(settings.db_path, MIGRATIONS_DIR)
+    db.init()
+
+    from .adapters.llm import build_llm_client
+    llm = build_llm_client(
+        settings.llm_provider,
+        settings.anthropic_api_key,
+        settings.anthropic_model,
+        settings.openai_api_key,
+        settings.openai_model,
+        settings.github_token,
+        settings.github_model,
+    )
+    calendar_id = getattr(args, "calendar_id", None)
+    agent = ContentAgent(db, llm, calendar_id=calendar_id)
+    report = agent.run()
+    print(report.summary)
+
+    if args.notify:
+        notifier = build_notifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        notifier.send_with_approval(
+            f"[{report.status.upper()}] {report.agent}",
+            report.summary,
+            ref_table="drafts",
+            ref_id=0,  # il draft ID è nel summary
+        )
+    return 0 if report.status in ("ok", "warning") else 1
+
+
+def cmd_weekly_report(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    settings.ensure_dirs()
+    db = Database(settings.db_path, MIGRATIONS_DIR)
+    db.init()
+
+    from .adapters.llm import build_llm_client
+    llm = build_llm_client(
+        settings.llm_provider,
+        settings.anthropic_api_key,
+        settings.anthropic_model,
+        settings.openai_api_key,
+        settings.openai_model,
+        settings.github_token,
+        settings.github_model,
+    )
+    agent = WeeklyReportAgent(db, llm)
+    report = agent.run()
+    print(report.summary)
+
+    if args.notify:
+        notifier = build_notifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        notifier.send(f"[{report.status.upper()}] {report.agent}", report.summary)
+    return 0 if report.status in ("ok", "warning") else 1
+
+
 def cmd_serve(_: argparse.Namespace) -> int:
     import uvicorn
 
@@ -109,6 +169,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp_cal = sub.add_parser("calendar", help="Genera il calendario editoriale settimanale")
     sp_cal.add_argument("--notify", action="store_true", help="Invia anche notifica Telegram")
     sp_cal.set_defaults(func=cmd_run_calendar)
+
+    sp_cnt = sub.add_parser("content", help="Genera bozza contenuto da voce calendario approvata")
+    sp_cnt.add_argument("--calendar-id", type=int, dest="calendar_id", help="ID specifico del calendario")
+    sp_cnt.add_argument("--notify", action="store_true", help="Invia notifica Telegram con bottoni approvazione")
+    sp_cnt.set_defaults(func=cmd_run_content)
+
+    sp_rep = sub.add_parser("report", help="Genera il report settimanale (domenica)")
+    sp_rep.add_argument("--notify", action="store_true", help="Invia anche notifica Telegram")
+    sp_rep.set_defaults(func=cmd_weekly_report)
 
     sp_ver = sub.add_parser("version", help="Print version and exit")
     sp_ver.set_defaults(func=cmd_version)

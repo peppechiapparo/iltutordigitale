@@ -15,6 +15,8 @@ from ..adapters.llm import build_llm_client
 from ..adapters.notifier import build_notifier
 from ..agents.seo_monitor import SEOMonitorAgent
 from ..agents.calendar_agent import CalendarAgent
+from ..agents.content_agent import ContentAgent
+from ..agents.weekly_report import WeeklyReportAgent
 from ..core.config import Settings, get_settings
 from ..core.db import Database
 from ..core.logging import configure_logging, get_logger
@@ -158,6 +160,62 @@ def trigger_calendar_agent(db: DbDep, authorization: AuthHeader = None) -> JSONR
         "status": report.status,
         "summary": report.summary,
     })
+
+
+@app.post("/api/agents/content/run")
+def trigger_content_agent(
+    db: DbDep,
+    authorization: AuthHeader = None,
+    calendar_id: int | None = None,
+) -> JSONResponse:
+    """Manual on-demand run del ContentAgent."""
+    _require_token(app.state.settings, authorization)
+    agent = ContentAgent(db=db, llm=app.state.llm, calendar_id=calendar_id)
+    report = agent.run()
+    return JSONResponse({
+        "agent": report.agent,
+        "status": report.status,
+        "summary": report.summary,
+    })
+
+
+@app.post("/api/agents/weekly_report/run")
+def trigger_weekly_report(db: DbDep, authorization: AuthHeader = None) -> JSONResponse:
+    """Manual on-demand run del WeeklyReportAgent."""
+    _require_token(app.state.settings, authorization)
+    agent = WeeklyReportAgent(db=db, llm=app.state.llm)
+    report = agent.run()
+    return JSONResponse({
+        "agent": report.agent,
+        "status": report.status,
+        "summary": report.summary,
+    })
+
+
+@app.get("/api/calendar")
+def list_calendar(db: DbDep, authorization: AuthHeader = None, limit: int = 20) -> JSONResponse:
+    """Elenco voci calendario editoriale."""
+    _require_token(app.state.settings, authorization)
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT id, week_start, day, date, pillar, format, topic, status"
+            " FROM editorial_calendar ORDER BY date DESC LIMIT ?",
+            (max(1, min(limit, 200)),),
+        ).fetchall()
+    return JSONResponse([dict(r) for r in rows])
+
+
+@app.get("/api/drafts")
+def list_drafts(db: DbDep, authorization: AuthHeader = None, limit: int = 20) -> JSONResponse:
+    """Elenco bozze generate."""
+    _require_token(app.state.settings, authorization)
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT id, calendar_id, agent, content_type, title, status, created_at"
+            " FROM drafts ORDER BY id DESC LIMIT ?",
+            (max(1, min(limit, 200)),),
+        ).fetchall()
+    return JSONResponse([dict(r) for r in rows])
 
 
 @app.get("/", response_class=HTMLResponse)

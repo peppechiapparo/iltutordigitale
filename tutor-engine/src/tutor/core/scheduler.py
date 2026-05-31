@@ -21,6 +21,8 @@ from ..adapters.notifier import Notifier
 from ..agents.base import Agent, AgentReport
 from ..agents.seo_monitor import SEOMonitorAgent
 from ..agents.calendar_agent import CalendarAgent
+from ..agents.content_agent import ContentAgent
+from ..agents.weekly_report import WeeklyReportAgent
 from ..adapters.llm import LLMClient
 
 log = get_logger(__name__)
@@ -87,6 +89,19 @@ def build_scheduler(
         kwargs={"agent": calendar_agent, "notifier": notifier},
         id="calendar_agent_weekly",
         name="Calendar Agent (Monday 06:30)",
+        max_instances=1,
+        coalesce=True,
+        replace_existing=True,
+    )
+
+    # ── Weekly Report: ogni domenica alle 18:00 ──────────────────────────────
+    weekly_agent = WeeklyReportAgent(db=db, llm=llm)
+    sched.add_job(
+        _run_agent_and_notify,
+        trigger=CronTrigger(day_of_week="sun", hour=18, minute=0),
+        kwargs={"agent": weekly_agent, "notifier": notifier, "notify_on_ok": True},
+        id="weekly_report_sunday",
+        name="Weekly Report (Sunday 18:00)",
         max_instances=1,
         coalesce=True,
         replace_existing=True,
