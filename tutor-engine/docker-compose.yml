@@ -1,10 +1,10 @@
 services:
-  shan:
+  tutor:
     build:
       context: .
       dockerfile: Dockerfile
-    image: shan-growth-agent:0.1.0
-    container_name: shan
+    image: tutor-engine:0.1.0
+    container_name: tutor
     restart: unless-stopped
     env_file:
       - .env
@@ -14,7 +14,7 @@ services:
       - ./data:/app/data
       - ./secrets:/app/secrets:ro
     # Pi-friendly resource caps
-    mem_limit: 512m
+    mem_limit: 256m
     cpus: "1.5"
     logging:
       driver: json-file

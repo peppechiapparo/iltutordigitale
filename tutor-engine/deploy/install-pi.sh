@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-pi.sh — bootstraps Shan Growth Agent on a Raspberry Pi (Debian/RPi OS).
+# install-pi.sh — bootstraps Tutor Engine su un Raspberry Pi (Debian/RPi OS).
 #
 # Idempotent. Safe to re-run. Designed for: ssh giuseppe@192.168.1.30
 #
@@ -11,12 +11,12 @@
 set -euo pipefail
 
 APP_USER="${APP_USER:-giuseppe}"
-APP_DIR="${APP_DIR:-/opt/shan-growth-agent}"
+APP_DIR="${APP_DIR:-/opt/tutor-engine}"
 REPO_URL="${REPO_URL:-}"  # optional: if set, performs a fresh clone
 
-log()  { printf '\033[1;36m[shan]\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33m[shan]\033[0m %s\n' "$*" >&2; }
-die()  { printf '\033[1;31m[shan]\033[0m %s\n' "$*" >&2; exit 1; }
+log()  { printf '\033[1;36m[tutor]\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m[tutor]\033[0m %s\n' "$*" >&2; }
+die()  { printf '\033[1;31m[tutor]\033[0m %s\n' "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || die "Run as root (use sudo)."
 
@@ -70,7 +70,7 @@ if command -v ufw >/dev/null 2>&1; then
     yes | ufw enable >/dev/null 2>&1 || true
 fi
 
-log "Building and starting Shan stack"
+log "Building and starting Tutor Engine stack"
 docker compose pull 2>/dev/null || true
 docker compose build
 docker compose up -d
@@ -79,4 +79,4 @@ log "Status:"
 docker compose ps
 
 log "Done. Dashboard: http://$(hostname -I | awk '{print $1}'):8765/"
-log "Tail logs with: docker compose logs -f shan"
+log "Tail logs with: docker compose logs -f tutor"

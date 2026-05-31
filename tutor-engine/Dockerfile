@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
 
 # Non-root user
-RUN groupadd -r shan && useradd -r -g shan -m -d /home/shan shan
+RUN groupadd -r tutor && useradd -r -g tutor -m -d /home/tutor tutor
 
 WORKDIR /app
 
@@ -37,13 +37,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /app/data /app/secrets && chown -R shan:shan /app
-USER shan
+RUN mkdir -p /app/data /app/secrets && chown -R tutor:tutor /app
+USER tutor
 
 EXPOSE 8765
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8765/healthz || exit 1
 
-ENTRYPOINT ["shan"]
+ENTRYPOINT ["tutor"]
 CMD ["serve"]

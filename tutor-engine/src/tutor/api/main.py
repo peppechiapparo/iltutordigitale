@@ -14,6 +14,7 @@ from .. import __version__
 from ..adapters.llm import build_llm_client
 from ..adapters.notifier import build_notifier
 from ..agents.seo_monitor import SEOMonitorAgent
+from ..agents.calendar_agent import CalendarAgent
 from ..core.config import Settings, get_settings
 from ..core.db import Database
 from ..core.logging import configure_logging, get_logger
@@ -27,9 +28,9 @@ MIGRATIONS_DIR = _src_migrations if _src_migrations.exists() else Path("/app/mig
 
 
 def _require_token(settings: Settings, authorization: str | None) -> None:
-    if not settings.shan_api_token:
+    if not settings.tutor_api_token:
         return
-    expected = f"Bearer {settings.shan_api_token}"
+    expected = f"Bearer {settings.tutor_api_token}"
     if authorization != expected:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
@@ -37,7 +38,7 @@ def _require_token(settings: Settings, authorization: str | None) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    configure_logging(settings.shan_log_level)
+    configure_logging(settings.tutor_log_level)
     settings.ensure_dirs()
 
     db = Database(settings.db_path, MIGRATIONS_DIR)
@@ -58,7 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     scheduler = build_scheduler(settings, db, notifier, llm_client)
     scheduler.start()
-    log.info("shan_started", version=__version__, env=settings.shan_env)
+    log.info("tutor_started", version=__version__, env=settings.tutor_env)
 
     app.state.settings = settings
     app.state.db = db
@@ -69,13 +70,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         scheduler.shutdown(wait=False)
-        log.info("shan_stopped")
+        log.info("tutor_stopped")
 
 
 app = FastAPI(
-    title="Shan Growth Agent",
+    title="Tutor Engine",
     version=__version__,
-    description="Agentic SEO / content / social monitor for Scuola Kung Fu Maestro Cipriani.",
+    description="Content engine agenttico per Il Tutor Digitale — SEO monitor, calendario, bozze.",
     lifespan=lifespan,
 )
 
@@ -146,6 +147,19 @@ def trigger_seo_monitor(db: DbDep, authorization: AuthHeader = None) -> JSONResp
     })
 
 
+@app.post("/api/agents/calendar/run")
+def trigger_calendar_agent(db: DbDep, authorization: AuthHeader = None) -> JSONResponse:
+    """Manual on-demand run del CalendarAgent."""
+    _require_token(app.state.settings, authorization)
+    agent = CalendarAgent(db=db, llm=app.state.llm)
+    report = agent.run()
+    return JSONResponse({
+        "agent": report.agent,
+        "status": report.status,
+        "summary": report.summary,
+    })
+
+
 @app.get("/", response_class=HTMLResponse)
 def dashboard(db: DbDep) -> HTMLResponse:
     with db.connect() as conn:
@@ -163,7 +177,7 @@ def dashboard(db: DbDep) -> HTMLResponse:
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <title>Shan Growth Agent</title>
+  <title>Tutor Engine — Il Tutor Digitale</title>
   <style>
     body {{ font-family: ui-sans-serif, system-ui, sans-serif; margin: 2rem; color: #222; }}
     h1 {{ margin: 0 0 .5rem 0; }}
@@ -177,8 +191,8 @@ def dashboard(db: DbDep) -> HTMLResponse:
   </style>
 </head>
 <body>
-  <h1>Shan Growth Agent <small style="font-size:.6em;color:#888">v{__version__}</small></h1>
-  <div class="sub">Target: <a href="{settings.site_url}">{settings.site_url}</a></div>
+  <h1>Tutor Engine <small style="font-size:.6em;color:#888">v{__version__}</small></h1>
+  <div class="sub">🎓 <strong>Il Tutor Digitale</strong> — Target: <a href="{settings.site_url}">{settings.site_url}</a></div>
   <table>
     <thead><tr><th>#</th><th>Agent</th><th>Started</th><th>Status</th><th>Summary</th></tr></thead>
     <tbody>{items or '<tr><td colspan=5><em>No runs yet.</em></td></tr>'}</tbody>

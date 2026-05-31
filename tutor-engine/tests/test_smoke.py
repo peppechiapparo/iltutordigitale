@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from shan import __version__
-from shan.adapters.notifier import NullNotifier, build_notifier
-from shan.core.db import Database
+from tutor import __version__
+from tutor.adapters.notifier import NullNotifier, build_notifier
+from tutor.core.db import Database
 
 
 def test_version() -> None:
@@ -29,4 +29,4 @@ def test_database_migration(tmp_path: Path) -> None:
         tables = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         )}
-    assert {"agent_runs", "findings", "notifications_log", "_migrations"} <= tables
+    assert {"agent_runs", "findings", "notifications_log", "editorial_calendar", "drafts", "approvals", "_migrations"} <= tables

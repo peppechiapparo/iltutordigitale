@@ -6,7 +6,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,23 +20,26 @@ class Settings(BaseSettings):
     )
 
     # Target site
-    site_url: str = "https://www.scuolakungfucipriani.it/"
-    site_name: str = "Scuola Kung Fu Maestro Cipriani"
-    site_instagram_handle: str = "scuolacipriani"
+    site_url: str = "https://tutordigitale.com/"
+    site_name: str = "Il Tutor Digitale"
+    site_instagram_handle: str = "iltutordigitale"
+    site_youtube_handle: str = "iltutordigitale"
+    site_facebook_handle: str = "iltutordigitale"
+    youtube_channel_id: str = ""  # da impostare quando il canale sarà attivo
 
     # Runtime
-    shan_env: Literal["development", "production"] = "production"
-    shan_log_level: str = "INFO"
-    shan_timezone: str = "Europe/Rome"
-    shan_data_dir: Path = Path("/app/data")
+    tutor_env: Literal["development", "production"] = "production"
+    tutor_log_level: str = "INFO"
+    tutor_timezone: str = "Europe/Rome"
+    tutor_data_dir: Path = Path("/app/data")
 
     # API
-    shan_api_host: str = "0.0.0.0"  # noqa: S104
-    shan_api_port: int = 8765
-    shan_api_token: str = ""
+    tutor_api_host: str = "0.0.0.0"  # noqa: S104
+    tutor_api_port: int = 8765
+    tutor_api_token: str = ""
 
     # LLM
-    llm_provider: Literal["anthropic", "openai", "github_models"] = "anthropic"
+    llm_provider: Literal["anthropic", "openai", "github_models"] = "github_models"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-20250514"
     openai_api_key: str = ""
@@ -52,31 +54,38 @@ class Settings(BaseSettings):
 
     # Google Search Console
     gsc_service_account_json: Path = Path("/app/secrets/gsc-sa.json")
-    gsc_site_property: str = ""
+    gsc_site_property: str = "sc-domain:tutordigitale.com"
 
     # PageSpeed
     pagespeed_api_key: str = ""
 
-    # Instagram
+    # Instagram Graph API (per SocialPublisher — Fase 2+)
     ig_user_id: str = ""
     ig_access_token: str = ""
     ig_app_id: str = ""
     ig_app_secret: str = ""
 
-    # IndexNow
+    # YouTube Analytics (per YouTubeMonitor — Fase 3)
+    youtube_api_key: str = ""
+
+    # Cloudflare Analytics (per WeeklyReport)
+    cloudflare_account_id: str = ""
+    cloudflare_api_token: str = ""
+
+    # IndexNow (Bing/others — per SEOMonitor)
     indexnow_key: str = ""
 
     # Derived
     @property
     def db_path(self) -> Path:
-        return self.shan_data_dir / "shan.db"
+        return self.tutor_data_dir / "tutor.db"
 
     @property
     def reports_dir(self) -> Path:
-        return self.shan_data_dir / "reports"
+        return self.tutor_data_dir / "reports"
 
     def ensure_dirs(self) -> None:
-        self.shan_data_dir.mkdir(parents=True, exist_ok=True)
+        self.tutor_data_dir.mkdir(parents=True, exist_ok=True)
         self.reports_dir.mkdir(parents=True, exist_ok=True)
 
 

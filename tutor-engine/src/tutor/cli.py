@@ -1,4 +1,4 @@
-"""Command-line entrypoint: `shan <subcommand>`."""
+"""Command-line entrypoint: `tutor <subcommand>`."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from pathlib import Path
 from . import __version__
 from .adapters.notifier import build_notifier
 from .agents.seo_monitor import SEOMonitorAgent
+from .agents.calendar_agent import CalendarAgent
 from .core.config import get_settings
 from .core.db import Database
 from .core.logging import configure_logging, get_logger
@@ -48,15 +49,42 @@ def cmd_run_seo(args: argparse.Namespace) -> int:
     return 0 if report.status in ("ok", "warning") else 1
 
 
+def cmd_run_calendar(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    settings.ensure_dirs()
+    db = Database(settings.db_path, MIGRATIONS_DIR)
+    db.init()
+
+    from .adapters.llm import build_llm_client
+    llm = build_llm_client(
+        settings.llm_provider,
+        settings.anthropic_api_key,
+        settings.anthropic_model,
+        settings.openai_api_key,
+        settings.openai_model,
+        settings.github_token,
+        settings.github_model,
+    )
+    agent = CalendarAgent(db, llm)
+    report = agent.run()
+    print(report.summary)
+
+    if args.notify:
+        notifier = build_notifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        notifier.send(f"[{report.status.upper()}] {report.agent}", report.summary)
+
+    return 0 if report.status in ("ok", "warning") else 1
+
+
 def cmd_serve(_: argparse.Namespace) -> int:
     import uvicorn
 
     settings = get_settings()
     uvicorn.run(
-        "shan.api.main:app",
-        host=settings.shan_api_host,
-        port=settings.shan_api_port,
-        log_level=settings.shan_log_level.lower(),
+        "tutor.api.main:app",
+        host=settings.tutor_api_host,
+        port=settings.tutor_api_port,
+        log_level=settings.tutor_log_level.lower(),
         access_log=False,
     )
     return 0
@@ -68,7 +96,7 @@ def cmd_version(_: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="shan", description="Shan Growth Agent")
+    p = argparse.ArgumentParser(prog="tutor", description="Tutor Engine — Il Tutor Digitale")
     sub = p.add_subparsers(dest="command", required=True)
 
     sp_seo = sub.add_parser("seo", help="Run SEO monitor once and print JSON report")
@@ -78,6 +106,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp_serve = sub.add_parser("serve", help="Start FastAPI dashboard + scheduler")
     sp_serve.set_defaults(func=cmd_serve)
 
+    sp_cal = sub.add_parser("calendar", help="Genera il calendario editoriale settimanale")
+    sp_cal.add_argument("--notify", action="store_true", help="Invia anche notifica Telegram")
+    sp_cal.set_defaults(func=cmd_run_calendar)
+
     sp_ver = sub.add_parser("version", help="Print version and exit")
     sp_ver.set_defaults(func=cmd_version)
 
@@ -86,7 +118,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     settings = get_settings()
-    configure_logging(settings.shan_log_level)
+    configure_logging(settings.tutor_log_level)
     args = build_parser().parse_args(argv)
     return args.func(args)
 
