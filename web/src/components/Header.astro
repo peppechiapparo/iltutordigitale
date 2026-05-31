@@ -7,16 +7,17 @@ const isActive = (href: string) =>
 ---
 
 <header class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-  <div class="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between gap-4">
+  <div class="mx-auto max-w-6xl px-4 h-20 flex items-center justify-between gap-4">
     <!-- Logo -->
-    <a href="/" class="flex items-center gap-2.5 group flex-shrink-0" aria-label={`${SITE.name} — Home`}>
-      <span
-        class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-brand-blue text-white font-heading font-bold text-sm select-none group-hover:bg-brand-blue-mid transition-colors"
-        aria-hidden="true"
-      >TD</span>
-      <span class="font-heading text-base font-bold text-brand-dark group-hover:text-brand-blue transition-colors hidden sm:inline">
-        {SITE.name}
-      </span>
+    <a href="/" class="flex items-center gap-1 group flex-shrink-0" aria-label={`${SITE.name} — Home`}>
+      <img
+        src="/logo.png"
+        alt={SITE.name}
+        class="h-12 w-auto"
+        width="48"
+        height="48"
+        loading="eager"
+      />
     </a>
 
     <!-- Nav desktop -->

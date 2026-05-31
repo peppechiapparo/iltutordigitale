@@ -13,8 +13,14 @@ const year = new Date().getFullYear();
       <!-- Brand -->
       <div class="md:col-span-1">
         <a href="/" class="flex items-center gap-2.5 group w-fit">
-          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-brand-blue text-white font-heading font-bold text-sm" aria-hidden="true">TD</span>
-          <span class="font-heading text-base font-bold text-white group-hover:text-brand-orange transition-colors">{SITE.name}</span>
+          <img
+            src="/logo.png"
+            alt={SITE.name}
+            class="h-10 w-auto brightness-0 invert"
+            width="40"
+            height="40"
+            loading="lazy"
+          />
         </a>
         <p class="mt-3 text-sm text-white/60 leading-relaxed">
           Guide tecnologiche semplici per italiani over 45.<br/>
