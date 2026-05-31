@@ -5,7 +5,7 @@
 export const SITE = {
   name: 'Il Tutor Digitale',
   tagline: 'Tecnologia per tutti — senza paura',
-  creator: 'Giuseppe',
+  creator: 'Abby e Giuseppe',
   url: import.meta.env.PUBLIC_SITE_URL ?? 'https://tutordigitale.com',
   email: 'info@tutordigitale.com',
   /** Numero WhatsApp internazionale senza + (es: "393401234567"). Lascia vuoto per disabilitare il link. */

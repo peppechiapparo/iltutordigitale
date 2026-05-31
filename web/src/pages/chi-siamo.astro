@@ -4,18 +4,27 @@ import { SITE } from '@/data/site';
 
 const personSchema = {
   '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: SITE.creator,
-  url: SITE.url,
-  email: SITE.email,
-  description: 'Creator di Il Tutor Digitale: tutorial di tecnologia semplici e chiari per italiani over 45.',
-  sameAs: [],
+  '@graph': [
+    {
+      '@type': 'Person',
+      name: 'Giuseppe',
+      url: SITE.url,
+      email: SITE.email,
+      description: 'Co-creator di Il Tutor Digitale: tutorial di tecnologia semplici per italiani over 45.',
+    },
+    {
+      '@type': 'Person',
+      name: 'Abby',
+      url: SITE.url,
+      description: 'Co-creator di Il Tutor Digitale: il punto di vista di chi impara.',
+    },
+  ],
 };
 ---
 
 <BaseLayout
-  title="Chi siamo"
-  description="Il Tutor Digitale è il progetto di Giuseppe: tutorial di tecnologia semplici e chiari per chi vuole imparare senza fretta e senza gergo tecnico."
+  title="Chi siamo — Abby e Giuseppe"
+  description="Il Tutor Digitale è il progetto di Abby e Giuseppe: tutorial di tecnologia semplici e chiari per chi vuole imparare senza fretta e senza gergo tecnico."
 >
   <script type="application/ld+json" is:inline set:html={JSON.stringify(personSchema)} />
 
@@ -23,11 +32,31 @@ const personSchema = {
     <h1 class="font-heading text-3xl md:text-4xl text-brand-blue">Chi siamo</h1>
 
     <!-- In breve AEO -->
-    <p class="mt-5 text-xl text-brand-dark">
-      Il Tutor Digitale è il progetto di <strong>{SITE.creator}</strong>:
+    <p class="mt-5 text-xl text-brand-dark leading-relaxed">
+      Il Tutor Digitale è il progetto di <strong>Abby e Giuseppe</strong>:
       guide di tecnologia scritte in italiano semplice, pensate per chi ha più di 45 anni
       e vuole imparare a usare smartphone, PC e internet senza paura.
     </p>
+
+    <!-- Card presentazione -->
+    <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div class="rounded-2xl bg-brand-blue-light p-7">
+        <p class="font-heading text-2xl text-brand-blue mb-3">Giuseppe</p>
+        <p class="text-brand-mid leading-relaxed">
+          Appassionato di tecnologia da sempre, ha visto troppi amici e familiari
+          in difficoltà con smartphone e computer. Ha creato il Tutor Digitale
+          per dare risposte chiare, senza fretta e senza gergo tecnico.
+        </p>
+      </div>
+      <div class="rounded-2xl bg-brand-blue-light p-7">
+        <p class="font-heading text-2xl text-brand-blue mb-3">Abby</p>
+        <p class="text-brand-mid leading-relaxed">
+          Il punto di vista di chi impara: occhio critico, entusiasmo genuino
+          e la capacità di capire subito quando una spiegazione è troppo complicata.
+          Rende ogni guida più umana e più utile.
+        </p>
+      </div>
+    </div>
 
     <div class="mt-10 prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-brand-dark">
       <h2>Perché questo progetto</h2>
@@ -44,11 +73,11 @@ const personSchema = {
         Puoi seguire i tutorial sul sito, oppure guardare i video sul canale YouTube.
       </p>
 
-      <h2>Contattami</h2>
+      <h2>Scrivici</h2>
       <p>
         Hai una domanda, hai trovato un errore, o vuoi suggerire un argomento?
         Scrivi a <a href={`mailto:${SITE.email}`}>{SITE.email}</a> —
-        rispondo a tutti i messaggi.
+        rispondiamo a tutti i messaggi.
       </p>
     </div>
   </div>
