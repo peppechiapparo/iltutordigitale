@@ -13,10 +13,12 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from .. import __version__
 from ..adapters.llm import build_llm_client
 from ..adapters.notifier import build_notifier
+from ..adapters.telegram_polling import build_polling_handler
 from ..agents.seo_monitor import SEOMonitorAgent
 from ..agents.calendar_agent import CalendarAgent
 from ..agents.content_agent import ContentAgent
 from ..agents.weekly_report import WeeklyReportAgent
+from ..agents.youtube_monitor import YouTubeMonitorAgent
 from ..core.config import Settings, get_settings
 from ..core.db import Database
 from ..core.logging import configure_logging, get_logger
@@ -61,6 +63,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     scheduler = build_scheduler(settings, db, notifier, llm_client)
     scheduler.start()
+
+    # Telegram polling handler — processa ✅/✏️/❌ dalle bozze/calendario
+    polling = build_polling_handler(settings.telegram_bot_token, db)
+    polling.start()
+    app.state.polling = polling
+
     log.info("tutor_started", version=__version__, env=settings.tutor_env)
 
     app.state.settings = settings
@@ -72,6 +80,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         scheduler.shutdown(wait=False)
+        if hasattr(app.state, 'polling'):
+            app.state.polling.stop()
         log.info("tutor_stopped")
 
 

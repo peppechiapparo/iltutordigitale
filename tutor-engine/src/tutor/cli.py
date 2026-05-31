@@ -13,6 +13,7 @@ from .agents.seo_monitor import SEOMonitorAgent
 from .agents.calendar_agent import CalendarAgent
 from .agents.content_agent import ContentAgent
 from .agents.weekly_report import WeeklyReportAgent
+from .agents.youtube_monitor import YouTubeMonitorAgent
 from .core.config import get_settings
 from .core.db import Database
 from .core.logging import configure_logging, get_logger
@@ -136,6 +137,48 @@ def cmd_weekly_report(args: argparse.Namespace) -> int:
     return 0 if report.status in ("ok", "warning") else 1
 
 
+def cmd_youtube(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    settings.ensure_dirs()
+    db = Database(settings.db_path, MIGRATIONS_DIR)
+    db.init()
+
+    if not settings.youtube_api_key:
+        print("⚠️  YOUTUBE_API_KEY non configurata. Aggiungila nel .env.")
+        return 1
+    if not settings.youtube_channel_id:
+        print("⚠️  YOUTUBE_CHANNEL_ID non configurato. Usa: tutor resolve-channel-id")
+        return 1
+
+    agent = YouTubeMonitorAgent(db, settings.youtube_api_key, settings.youtube_channel_id)
+    report = agent.run()
+    print(report.summary)
+    for f in report.findings:
+        print(f"  [{f.severity}] {f.code}: {f.message}")
+
+    if args.notify:
+        notifier = build_notifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        from .core.scheduler import _format_report_for_telegram
+        subject, body = _format_report_for_telegram(report)
+        notifier.send(subject, body)
+    return 0 if report.status in ("ok", "warning") else 1
+
+
+def cmd_resolve_channel_id(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    handle = getattr(args, "handle", None) or settings.youtube_channel_handle
+    if not settings.youtube_api_key:
+        print("⚠️  YOUTUBE_API_KEY non configurata.")
+        return 1
+    channel_id = YouTubeMonitorAgent.resolve_channel_id(settings.youtube_api_key, handle)
+    if channel_id:
+        print(f"✅ Channel ID per @{handle}: {channel_id}")
+        print(f"   → Aggiungi nel .env: YOUTUBE_CHANNEL_ID={channel_id}")
+    else:
+        print(f"⚠️  Impossibile risolvere @{handle}. Verifica il handle e la API key.")
+    return 0 if channel_id else 1
+
+
 def cmd_serve(_: argparse.Namespace) -> int:
     import uvicorn
 
@@ -178,6 +221,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp_rep = sub.add_parser("report", help="Genera il report settimanale (domenica)")
     sp_rep.add_argument("--notify", action="store_true", help="Invia anche notifica Telegram")
     sp_rep.set_defaults(func=cmd_weekly_report)
+
+    sp_yt = sub.add_parser("youtube", help="Analizza performance canale YouTube")
+    sp_yt.add_argument("--notify", action="store_true", help="Invia notifica Telegram")
+    sp_yt.set_defaults(func=cmd_youtube)
+
+    sp_rid = sub.add_parser("resolve-channel-id", help="Risolve @handle YouTube → Channel ID")
+    sp_rid.add_argument("--handle", help="@handle YouTube (default: da config)")
+    sp_rid.set_defaults(func=cmd_resolve_channel_id)
 
     sp_ver = sub.add_parser("version", help="Print version and exit")
     sp_ver.set_defaults(func=cmd_version)

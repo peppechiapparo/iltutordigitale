@@ -95,3 +95,93 @@ def test_content_agent_collect_empty_db(tmp_path: Path) -> None:
     agent = ContentAgent(db=db, llm=None, calendar_id=None)  # type: ignore[arg-type]
     result = agent.collect()
     assert "error" in result
+
+
+# ── Sprint 2: YouTube Monitor + Telegram Polling ──────────────────────────────
+
+def test_youtube_monitor_no_api_key(tmp_path):
+    """YouTubeMonitorAgent restituisce warning se API key mancante."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    from tutor.agents.youtube_monitor import YouTubeMonitorAgent
+    agent = YouTubeMonitorAgent(db, api_key="", channel_id="")
+    raw = agent.collect()
+    assert "error" in raw
+    status, summary, findings = agent.analyze(raw)
+    assert status == "warning"
+    assert len(findings) == 1
+    assert findings[0].code == "config_missing"
+
+
+def test_youtube_monitor_no_channel_id(tmp_path):
+    """YouTubeMonitorAgent restituisce warning se channel_id mancante."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    from tutor.agents.youtube_monitor import YouTubeMonitorAgent
+    agent = YouTubeMonitorAgent(db, api_key="fake-key", channel_id="")
+    raw = agent.collect()
+    assert "error" in raw
+
+
+def test_youtube_monitor_empty_videos(tmp_path):
+    """YouTubeMonitorAgent gestisce lista video vuota."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    from tutor.agents.youtube_monitor import YouTubeMonitorAgent
+    agent = YouTubeMonitorAgent(db, api_key="fake", channel_id="UCfake")
+    status, summary, findings = agent.analyze({"videos": []})
+    assert status == "ok"
+    assert findings == []
+
+
+def test_youtube_monitor_stats_computation(tmp_path):
+    """YouTubeMonitorAgent calcola correttamente top performer."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    from tutor.agents.youtube_monitor import YouTubeMonitorAgent
+    agent = YouTubeMonitorAgent(db, api_key="fake", channel_id="UCfake")
+
+    videos = [
+        {"id": "v1", "title": "Come usare WhatsApp", "views": 1500, "likes": 90, "comments": 20, "engagement_rate": 0.073, "published_at": "2024-01-01T00:00:00Z", "tags": []},
+        {"id": "v2", "title": "Sicurezza PC Windows", "views": 200, "likes": 4, "comments": 1, "engagement_rate": 0.025, "published_at": "2024-01-05T00:00:00Z", "tags": []},
+        {"id": "v3", "title": "App per foto", "views": 50, "likes": 0, "comments": 0, "engagement_rate": 0.0, "published_at": "2024-01-10T00:00:00Z", "tags": []},
+    ]
+    stats = agent._compute_stats(videos)
+    assert stats["top_videos"][0]["id"] == "v1"
+    assert len(stats["top_videos"]) == 3
+
+
+def test_telegram_polling_handler_import():
+    """TelegramPollingHandler importabile senza connessione di rete."""
+    from tutor.adapters.telegram_polling import TelegramPollingHandler, build_polling_handler
+    assert TelegramPollingHandler is not None
+    assert build_polling_handler is not None
+
+
+def test_telegram_polling_handler_no_token(tmp_path):
+    """build_polling_handler accetta token vuoto senza eccezioni."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    from tutor.adapters.telegram_polling import build_polling_handler
+    handler = build_polling_handler(bot_token="", db=db)
+    # start() con token vuoto: non avvia il thread, non lancia eccezioni
+    handler.start()
+    assert handler._thread is None
+
+
+def test_telegram_decision_to_status_mapping():
+    """Mappa decision→status corretta."""
+    from tutor.adapters.telegram_polling import DECISION_TO_STATUS
+    assert DECISION_TO_STATUS["approve"] == "approvato"
+    assert DECISION_TO_STATUS["edit"] == "modificato"
+    assert DECISION_TO_STATUS["discard"] == "scartato"

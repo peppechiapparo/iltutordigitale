@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     site_instagram_handle: str = "iltutordigitale"
     site_youtube_handle: str = "iltutordigitale"
     site_facebook_handle: str = "iltutordigitale"
-    youtube_channel_id: str = ""  # da impostare quando il canale sarà attivo
+    youtube_channel_id: str = ""  # UCxxxxxxxx — usa "tutor resolve-channel-id" per ottenerlo
+    youtube_channel_handle: str = "IltuoTutorDigitale"  # @handle senza @
 
     # Runtime
     tutor_env: Literal["development", "production"] = "production"

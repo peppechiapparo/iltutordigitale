@@ -23,6 +23,7 @@ from ..agents.seo_monitor import SEOMonitorAgent
 from ..agents.calendar_agent import CalendarAgent
 from ..agents.content_agent import ContentAgent
 from ..agents.weekly_report import WeeklyReportAgent
+from ..agents.youtube_monitor import YouTubeMonitorAgent
 from ..adapters.llm import LLMClient
 
 log = get_logger(__name__)
@@ -106,6 +107,27 @@ def build_scheduler(
         coalesce=True,
         replace_existing=True,
     )
+
+    # ── YouTube Monitor: mercoledì 07:30 (solo se canale attivo) ──────────────
+    if settings.youtube_api_key and settings.youtube_channel_id:
+        yt_agent = YouTubeMonitorAgent(
+            db=db,
+            api_key=settings.youtube_api_key,
+            channel_id=settings.youtube_channel_id,
+        )
+        sched.add_job(
+            _run_agent_and_notify,
+            trigger=CronTrigger(day_of_week="wed", hour=7, minute=30),
+            kwargs={"agent": yt_agent, "notifier": notifier},
+            id="youtube_monitor_weekly",
+            name="YouTube Monitor (Wednesday 07:30)",
+            max_instances=1,
+            coalesce=True,
+            replace_existing=True,
+        )
+        log.info("youtube_monitor_scheduled")
+    else:
+        log.info("youtube_monitor_skipped", reason="YOUTUBE_API_KEY or YOUTUBE_CHANNEL_ID not set")
 
     log.info("scheduler_built", jobs=[j.id for j in sched.get_jobs()])
     return sched
