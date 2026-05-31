@@ -3,43 +3,86 @@ import { SITE, CATEGORIES } from '@/data/site';
 const year = new Date().getFullYear();
 ---
 
-<footer class="bg-brand-dark text-brand-bg mt-16">
-  <div class="mx-auto max-w-6xl px-4 py-10 grid gap-8 md:grid-cols-3">
-    <div>
-      <p class="font-heading text-lg text-white">{SITE.name}</p>
-      <p class="mt-2 text-brand-mid">{SITE.description}</p>
+<footer class="bg-brand-dark text-white/80">
+  <!-- Top strip brand -->
+  <div class="h-1 bg-gradient-to-r from-brand-blue via-brand-orange to-brand-blue-mid"></div>
+
+  <div class="mx-auto max-w-6xl px-4 pt-12 pb-8">
+    <div class="grid gap-8 md:grid-cols-4">
+
+      <!-- Brand -->
+      <div class="md:col-span-1">
+        <a href="/" class="flex items-center gap-2.5 group w-fit">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-brand-blue text-white font-heading font-bold text-sm" aria-hidden="true">TD</span>
+          <span class="font-heading text-base font-bold text-white group-hover:text-brand-orange transition-colors">{SITE.name}</span>
+        </a>
+        <p class="mt-3 text-sm text-white/60 leading-relaxed">
+          Guide tecnologiche semplici per italiani over 45.<br/>
+          A cura di <strong class="text-white/80">{SITE.creator}</strong>.
+        </p>
+        <a
+          href={`mailto:${SITE.email}`}
+          class="mt-4 inline-flex items-center gap-2 text-sm text-brand-orange hover:text-brand-orange-lt transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          {SITE.email}
+        </a>
+      </div>
+
+      <!-- Guide per argomento -->
+      <nav aria-label="Guide per argomento" class="md:col-span-1">
+        <p class="font-semibold text-white text-sm uppercase tracking-wider mb-4">Guide per argomento</p>
+        <ul class="space-y-2">
+          {
+            Object.entries(CATEGORIES).map(([key, c]) => (
+              <li>
+                <a
+                  href={`/categoria/${key}`}
+                  class="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+                >
+                  <span aria-hidden="true">{c.emoji}</span>
+                  {c.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <!-- Tutorial recenti -->
+      <nav aria-label="Tutorial" class="md:col-span-1">
+        <p class="font-semibold text-white text-sm uppercase tracking-wider mb-4">Tutorial</p>
+        <ul class="space-y-2">
+          <li><a href="/tutorial" class="text-sm text-white/60 hover:text-white transition-colors">Tutti i tutorial</a></li>
+          <li><a href="/categoria/smartphone" class="text-sm text-white/60 hover:text-white transition-colors">Smartphone</a></li>
+          <li><a href="/categoria/whatsapp" class="text-sm text-white/60 hover:text-white transition-colors">WhatsApp</a></li>
+          <li><a href="/categoria/pc" class="text-sm text-white/60 hover:text-white transition-colors">PC e Internet</a></li>
+          <li><a href="/categoria/sicurezza" class="text-sm text-white/60 hover:text-white transition-colors">Sicurezza online</a></li>
+        </ul>
+      </nav>
+
+      <!-- Info -->
+      <nav aria-label="Informazioni" class="md:col-span-1">
+        <p class="font-semibold text-white text-sm uppercase tracking-wider mb-4">Informazioni</p>
+        <ul class="space-y-2">
+          <li><a href="/chi-siamo" class="text-sm text-white/60 hover:text-white transition-colors">Chi siamo</a></li>
+          <li><a href="/contatti" class="text-sm text-white/60 hover:text-white transition-colors">Contatti</a></li>
+          <li><a href="/privacy" class="text-sm text-white/60 hover:text-white transition-colors">Privacy policy</a></li>
+          <li><a href="/note-legali" class="text-sm text-white/60 hover:text-white transition-colors">Note legali</a></li>
+        </ul>
+      </nav>
+
     </div>
 
-    <nav aria-label="Categorie">
-      <p class="font-semibold text-white">Argomenti</p>
-      <ul class="mt-2 space-y-1">
-        {
-          Object.entries(CATEGORIES).map(([key, c]) => (
-            <li>
-              <a href={`/categoria/${key}`} class="hover:text-white transition-colors">
-                {c.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
-
-    <nav aria-label="Informazioni">
-      <p class="font-semibold text-white">Informazioni</p>
-      <ul class="mt-2 space-y-1">
-        <li><a href="/chi-siamo" class="hover:text-white">Chi siamo</a></li>
-        <li><a href="/contatti" class="hover:text-white">Contatti</a></li>
-        <li><a href="/privacy" class="hover:text-white">Privacy</a></li>
-        <li><a href="/note-legali" class="hover:text-white">Note legali</a></li>
-      </ul>
-    </nav>
-  </div>
-
-  <div class="border-t border-brand-mid/30">
-    <p class="mx-auto max-w-6xl px-4 py-4 text-sm text-brand-mid">
-      © {year} {SITE.name} · A cura di {SITE.creator} ·
-      <a href={`mailto:${SITE.email}`} class="hover:text-white">{SITE.email}</a>
-    </p>
+    <!-- Bottom bar -->
+    <div class="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
+      <p>© {year} {SITE.name} · A cura di {SITE.creator}</p>
+      <p>
+        Fatto con cura in Italia ·
+        <a href="/privacy" class="hover:text-white/70 transition-colors">Privacy</a>
+        ·
+        <a href="/note-legali" class="hover:text-white/70 transition-colors">Note legali</a>
+      </p>
+    </div>
   </div>
 </footer>

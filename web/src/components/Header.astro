@@ -6,67 +6,110 @@ const isActive = (href: string) =>
   href === '/' ? path === '/' : path.startsWith(href);
 ---
 
-<header class="sticky top-0 z-50 bg-white border-b border-brand-blue-light shadow-sm">
-  <nav class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between" aria-label="Principale">
-    <a href="/" class="flex items-center gap-2 font-heading text-xl text-brand-blue">
-      <span aria-hidden="true">🎓</span>
-      <span>{SITE.name}</span>
+<header class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+  <div class="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between gap-4">
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2.5 group flex-shrink-0" aria-label={`${SITE.name} — Home`}>
+      <span
+        class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-brand-blue text-white font-heading font-bold text-sm select-none group-hover:bg-brand-blue-mid transition-colors"
+        aria-hidden="true"
+      >TD</span>
+      <span class="font-heading text-base font-bold text-brand-dark group-hover:text-brand-blue transition-colors hidden sm:inline">
+        {SITE.name}
+      </span>
     </a>
 
-    <!-- Menu desktop -->
-    <ul class="hidden md:flex items-center gap-6">
+    <!-- Nav desktop -->
+    <nav class="hidden lg:flex items-center gap-0.5 flex-1 justify-center" aria-label="Navigazione principale">
       {
         Object.entries(CATEGORIES).map(([key, c]) => (
-          <li>
-            <a
-              href={`/categoria/${key}`}
-              class:list={[
-                'py-2 hover:text-brand-blue transition-colors',
-                isActive(`/categoria/${key}`) && 'text-brand-blue font-semibold',
-              ]}
-            >
-              {c.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-
-    <!-- Toggle mobile -->
-    <button
-      id="menu-toggle"
-      class="md:hidden p-2 text-brand-dark"
-      aria-label="Apri il menu"
-      aria-expanded="false"
-      aria-controls="mobile-menu"
-    >
-      <span aria-hidden="true" class="text-2xl">☰</span>
-    </button>
-  </nav>
-
-  <!-- Menu mobile -->
-  <ul id="mobile-menu" class="hidden md:hidden border-t border-brand-blue-light px-4 pb-4">
-    {
-      Object.entries(CATEGORIES).map(([key, c]) => (
-        <li>
           <a
             href={`/categoria/${key}`}
-            class="block py-3 text-lg border-b border-brand-bg last:border-0"
+            class:list={[
+              'px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
+              isActive(`/categoria/${key}`)
+                ? 'bg-brand-blue-light text-brand-blue'
+                : 'text-brand-dark hover:bg-brand-bg hover:text-brand-blue',
+            ]}
           >
-            <span aria-hidden="true">{c.emoji}</span> {c.label}
+            <span aria-hidden="true" class="mr-1">{c.emoji}</span>{c.label}
           </a>
-        </li>
-      ))
-    }
-  </ul>
+        ))
+      }
+    </nav>
+
+    <!-- Azioni -->
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <a
+        href="/tutorial"
+        class="hidden md:inline-flex items-center bg-brand-orange hover:bg-brand-orange-dk text-brand-dark font-bold text-sm px-4 py-2 rounded-lg transition-colors min-h-[40px] whitespace-nowrap"
+      >
+        Tutte le guide
+      </a>
+      <button
+        id="menu-toggle"
+        class="lg:hidden p-2.5 rounded-lg text-brand-dark hover:bg-brand-bg transition-colors"
+        aria-label="Apri il menu di navigazione"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <svg id="icon-menu" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg id="icon-close" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hidden">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Menu mobile -->
+  <div
+    id="mobile-menu"
+    class="hidden lg:hidden border-t border-gray-100"
+    role="navigation"
+    aria-label="Menu mobile"
+  >
+    <div class="px-4 py-3 space-y-1">
+      {
+        Object.entries(CATEGORIES).map(([key, c]) => (
+          <a
+            href={`/categoria/${key}`}
+            class:list={[
+              'flex items-center gap-3 px-3 py-3 rounded-xl text-base font-medium transition-colors',
+              isActive(`/categoria/${key}`)
+                ? 'bg-brand-blue-light text-brand-blue'
+                : 'text-brand-dark hover:bg-brand-bg',
+            ]}
+          >
+            <span class="text-xl w-7 text-center" aria-hidden="true">{c.emoji}</span>
+            {c.label}
+          </a>
+        ))
+      }
+      <div class="pt-2 border-t border-gray-100 mt-2">
+        <a
+          href="/tutorial"
+          class="flex items-center justify-center bg-brand-orange hover:bg-brand-orange-dk text-brand-dark font-bold py-3 px-4 rounded-xl min-h-[48px] text-base transition-colors"
+        >
+          Tutte le guide
+        </a>
+      </div>
+    </div>
+  </div>
 </header>
 
 <script>
   const toggle = document.getElementById('menu-toggle');
-  const menu = document.getElementById('mobile-menu');
+  const menu   = document.getElementById('mobile-menu');
+  const iMenu  = document.getElementById('icon-menu');
+  const iClose = document.getElementById('icon-close');
   toggle?.addEventListener('click', () => {
-    const open = menu?.classList.toggle('hidden') === false;
-    toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Chiudi il menu' : 'Apri il menu');
+    const isOpen = !menu?.classList.contains('hidden');
+    menu?.classList.toggle('hidden');
+    iMenu?.classList.toggle('hidden', !isOpen);
+    iClose?.classList.toggle('hidden', isOpen);
+    toggle.setAttribute('aria-expanded', String(!isOpen));
+    toggle.setAttribute('aria-label', isOpen ? 'Apri il menu di navigazione' : 'Chiudi il menu');
   });
 </script>

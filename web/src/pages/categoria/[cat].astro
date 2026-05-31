@@ -1,7 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import Card from '@/components/ui/Card.astro';
+import TutorialCard from '@/components/TutorialCard.astro';
 import { CATEGORIES } from '@/data/site';
 import type { SiteCategory } from '@/data/site';
 
@@ -47,21 +47,14 @@ const tutorials = (await getCollection('tutorial', ({ data }) => !data.draft && 
     <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {
         tutorials.map((tutorial) => (
-          <Card href={`/tutorial/${tutorial.slug}`}>
-            <h2 class="font-heading text-lg text-brand-dark leading-snug">
-              {tutorial.data.title}
-            </h2>
-            <p class="mt-2 text-sm text-brand-mid line-clamp-2">
-              {tutorial.data.description}
-            </p>
-            <p class="mt-3 text-xs text-brand-mid">
-              {tutorial.data.pubDate.toLocaleDateString('it-IT', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </p>
-          </Card>
+          <TutorialCard
+            href={`/tutorial/${tutorial.slug}`}
+            title={tutorial.data.title}
+            description={tutorial.data.description}
+            category={cat}
+            categoryLabel={catInfo.label}
+            pubDate={tutorial.data.pubDate}
+          />
         ))
       }
     </div>
