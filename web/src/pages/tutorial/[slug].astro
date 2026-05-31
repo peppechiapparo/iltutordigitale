@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import ArticleSchema from '@/components/ArticleSchema.astro';
 import FaqBlock from '@/components/FaqBlock.astro';
+import YouTubeEmbed from '@/components/YouTubeEmbed.astro';
 import { CATEGORIES } from '@/data/site';
 
 export async function getStaticPaths() {
@@ -12,7 +13,7 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
-const { title, description, pubDate, updatedDate, heroImage, category, faq } = entry.data;
+const { title, description, pubDate, updatedDate, heroImage, category, faq, youtubeId } = entry.data;
 const cat = CATEGORIES[category];
 const url = `/tutorial/${entry.slug}`;
 ---
@@ -61,6 +62,9 @@ const url = `/tutorial/${entry.slug}`;
       <p class="font-semibold text-brand-blue text-sm uppercase tracking-wide mb-1">In breve</p>
       <p class="text-brand-dark" itemprop="description">{description}</p>
     </div>
+
+    <!-- Video YouTube (se disponibile nel frontmatter: youtubeId: 'xyz') -->
+    {youtubeId && <YouTubeEmbed id={youtubeId} title={title} />}
 
     <!-- Immagine hero -->
     {heroImage && (

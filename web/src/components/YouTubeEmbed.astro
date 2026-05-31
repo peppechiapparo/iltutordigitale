@@ -1,0 +1,23 @@
+---
+/**
+ * YouTubeEmbed — player YouTube responsivo con privacy-enhanced URL.
+ * Usage: <YouTubeEmbed id="dQw4w9WgXcQ" title="Come usare WhatsApp" />
+ */
+interface Props {
+  id: string;
+  title: string;
+}
+const { id, title } = Astro.props;
+const embedUrl = `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`;
+---
+
+<div class="mt-8 mb-6 rounded-2xl overflow-hidden shadow-lg aspect-video bg-brand-dark">
+  <iframe
+    src={embedUrl}
+    title={title}
+    class="w-full h-full"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowfullscreen
+    loading="lazy"
+  ></iframe>
+</div>
