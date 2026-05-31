@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     ig_access_token: str = ""
     ig_app_id: str = ""
     ig_app_secret: str = ""
+    # --- Facebook Page (per SocialPublisher) ---
+    fb_page_id: str = ""
+    fb_page_access_token: str = ""  # long-lived Page Access Token
 
     # YouTube Analytics (per YouTubeMonitor — Fase 3)
     youtube_api_key: str = ""

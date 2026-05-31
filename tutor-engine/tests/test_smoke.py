@@ -185,3 +185,118 @@ def test_telegram_decision_to_status_mapping():
     assert DECISION_TO_STATUS["approve"] == "approvato"
     assert DECISION_TO_STATUS["edit"] == "modificato"
     assert DECISION_TO_STATUS["discard"] == "scartato"
+
+
+# ── Sprint 2+: SocialPublisher ────────────────────────────────────────────────
+
+def test_social_publisher_import():
+    """SocialPublisherAgent + MetaPublisher importabili."""
+    from tutor.agents.social_publisher import SocialPublisherAgent, PLATFORM_MAP
+    from tutor.adapters.meta_publisher import MetaPublisher, NullMetaPublisher, build_meta_publisher
+    assert SocialPublisherAgent is not None
+    assert PLATFORM_MAP["post_facebook"] == "facebook"
+    assert PLATFORM_MAP["reel"] == "instagram"
+    assert PLATFORM_MAP["article"] == "skip"
+
+
+def test_build_meta_publisher_null_when_no_creds():
+    """build_meta_publisher → NullMetaPublisher se credenziali mancanti."""
+    from tutor.adapters.meta_publisher import build_meta_publisher, NullMetaPublisher
+    pub = build_meta_publisher("", "", "", "")
+    assert isinstance(pub, NullMetaPublisher)
+    assert pub.can_post_facebook is False
+    assert pub.can_post_instagram is False
+
+
+def test_build_meta_publisher_real_with_creds():
+    """build_meta_publisher → MetaPublisher se almeno un set di credenziali."""
+    from tutor.adapters.meta_publisher import build_meta_publisher, MetaPublisher
+    pub = build_meta_publisher("12345", "fake-token", "", "")
+    assert isinstance(pub, MetaPublisher)
+    assert pub.can_post_facebook is True
+    assert pub.can_post_instagram is False
+
+
+def test_social_publisher_empty_db(tmp_path):
+    """SocialPublisher con DB vuoto: status ok, nessun finding."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    from tutor.agents.social_publisher import SocialPublisherAgent
+    from tutor.adapters.meta_publisher import NullMetaPublisher
+    agent = SocialPublisherAgent(db, NullMetaPublisher())
+    report = agent.run()
+    assert report.status == "ok"
+    assert report.findings == []
+
+
+def test_social_publisher_dry_run(tmp_path):
+    """SocialPublisher dry_run: non pubblica ma genera finding dry_run."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    # Inserisci una bozza approvata
+    with db.connect() as conn:
+        conn.execute(
+            """INSERT INTO drafts
+               (calendar_id, agent, content_type, title, body, status, created_at, approved_at)
+               VALUES (NULL, 'test', 'post_facebook', 'Test Post', 'Testo di prova.', 'approvato', '2026-06-01', '2026-06-01')"""
+        )
+        conn.commit()
+
+    from tutor.agents.social_publisher import SocialPublisherAgent
+    from tutor.adapters.meta_publisher import NullMetaPublisher
+    agent = SocialPublisherAgent(db, NullMetaPublisher(), dry_run=True)
+    report = agent.run()
+    assert report.status == "ok"
+    assert len(report.findings) == 1
+    assert report.findings[0].code == "dry_run"
+
+
+def test_social_publisher_credentials_missing_warning(tmp_path):
+    """SocialPublisher senza credenziali: finding credentials_missing."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    with db.connect() as conn:
+        conn.execute(
+            """INSERT INTO drafts
+               (calendar_id, agent, content_type, title, body, status, created_at, approved_at)
+               VALUES (NULL, 'test', 'post_facebook', 'Test', 'Corpo.', 'approvato', '2026-06-01', '2026-06-01')"""
+        )
+        conn.commit()
+
+    from tutor.agents.social_publisher import SocialPublisherAgent
+    from tutor.adapters.meta_publisher import NullMetaPublisher
+    agent = SocialPublisherAgent(db, NullMetaPublisher(), dry_run=False)
+    report = agent.run()
+    assert report.status in ("ok", "warning")
+    assert any(f.code == "credentials_missing" for f in report.findings)
+
+
+def test_social_publisher_extract_image_url():
+    """_extract_image_url legge correttamente l'URL dalle notes."""
+    from tutor.agents.social_publisher import SocialPublisherAgent
+    url = SocialPublisherAgent._extract_image_url(
+        "image_url: https://tutordigitale.com/images/cover.jpg\naltra nota"
+    )
+    assert url == "https://tutordigitale.com/images/cover.jpg"
+
+    assert SocialPublisherAgent._extract_image_url("") is None
+    assert SocialPublisherAgent._extract_image_url("nessun url qui") is None
+
+
+def test_publication_log_migration(tmp_path):
+    """Migration 002 crea la tabella publication_log."""
+    _migs = Path(__file__).resolve().parents[1] / "migrations"
+    db = Database(tmp_path / "t.db", _migs)
+    db.init()
+
+    with db.connect() as conn:
+        tables = {r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        )}
+    assert "publication_log" in tables

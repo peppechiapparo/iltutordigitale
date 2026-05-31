@@ -19,6 +19,8 @@ from ..agents.calendar_agent import CalendarAgent
 from ..agents.content_agent import ContentAgent
 from ..agents.weekly_report import WeeklyReportAgent
 from ..agents.youtube_monitor import YouTubeMonitorAgent
+from ..agents.social_publisher import SocialPublisherAgent
+from ..adapters.meta_publisher import build_meta_publisher
 from ..core.config import Settings, get_settings
 from ..core.db import Database
 from ..core.logging import configure_logging, get_logger

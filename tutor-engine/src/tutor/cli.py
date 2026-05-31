@@ -14,6 +14,8 @@ from .agents.calendar_agent import CalendarAgent
 from .agents.content_agent import ContentAgent
 from .agents.weekly_report import WeeklyReportAgent
 from .agents.youtube_monitor import YouTubeMonitorAgent
+from .agents.social_publisher import SocialPublisherAgent
+from .adapters.meta_publisher import build_meta_publisher
 from .core.config import get_settings
 from .core.db import Database
 from .core.logging import configure_logging, get_logger
@@ -179,6 +181,36 @@ def cmd_resolve_channel_id(args: argparse.Namespace) -> int:
     return 0 if channel_id else 1
 
 
+def cmd_publish(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    settings.ensure_dirs()
+    db = Database(settings.db_path, MIGRATIONS_DIR)
+    db.init()
+
+    publisher = build_meta_publisher(
+        settings.fb_page_id,
+        settings.fb_page_access_token,
+        settings.ig_user_id,
+        settings.ig_access_token,
+    )
+    dry_run = getattr(args, "dry_run", False)
+    agent = SocialPublisherAgent(db, publisher, dry_run=dry_run)
+    report = agent.run()
+    print(report.summary)
+    for f in report.findings:
+        icon = {"info": "ℹ️", "warning": "⚠️", "error": "❌", "critical": "🔴"}.get(f.severity, "•")
+        print(f"  {icon} [{f.code}] {f.message}")
+        if f.url:
+            print(f"      → {f.url}")
+
+    if args.notify:
+        notifier = build_notifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        from .core.scheduler import _format_report_for_telegram
+        subject, body = _format_report_for_telegram(report)
+        notifier.send(subject, body)
+    return 0 if report.status in ("ok", "warning") else 1
+
+
 def cmd_serve(_: argparse.Namespace) -> int:
     import uvicorn
 
@@ -229,6 +261,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp_rid = sub.add_parser("resolve-channel-id", help="Risolve @handle YouTube → Channel ID")
     sp_rid.add_argument("--handle", help="@handle YouTube (default: da config)")
     sp_rid.set_defaults(func=cmd_resolve_channel_id)
+
+    sp_pub = sub.add_parser("publish", help="Pubblica bozze approvate sui canali Meta")
+    sp_pub.add_argument("--notify", action="store_true", help="Invia report su Telegram")
+    sp_pub.add_argument("--dry-run", action="store_true", help="Non pubblica, mostra solo cosa farebbe")
+    sp_pub.set_defaults(func=cmd_publish)
 
     sp_ver = sub.add_parser("version", help="Print version and exit")
     sp_ver.set_defaults(func=cmd_version)
