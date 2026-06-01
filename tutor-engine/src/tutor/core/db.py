@@ -11,7 +11,7 @@ from .logging import get_logger
 
 log = get_logger(__name__)
 
-SCHEMA_FILES = ["001_init.sql", "002_publication_log.sql"]
+SCHEMA_FILES = ["001_init.sql", "002_publication_log.sql", "003_events.sql"]
 
 
 class Database:

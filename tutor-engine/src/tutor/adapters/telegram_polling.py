@@ -21,6 +21,10 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Callable
 
+if TYPE_CHECKING:
+    from ..core.db import Database
+    from ..core.events import EventBus
+
 import httpx
 
 from ..core.logging import get_logger
@@ -61,6 +65,7 @@ class TelegramPollingHandler:
         db: "Database",
         timeout: float = 10.0,
         on_draft_approved: "Callable[[int], None] | None" = None,
+        bus: "EventBus | None" = None,
     ) -> None:
         self._token = bot_token
         self._db = db
@@ -70,6 +75,8 @@ class TelegramPollingHandler:
         self._last_update_id: int = 0
         # Callback opzionale da invocare quando un draft viene approvato
         self._on_draft_approved = on_draft_approved
+        # EventBus per emissione eventi strutturati
+        self._bus = bus
 
     def start(self) -> None:
         if not self._token:
@@ -197,6 +204,18 @@ class TelegramPollingHandler:
             except Exception as exc:  # noqa: BLE001
                 log.error("auto_publish_trigger_failed", error=str(exc))
 
+        # EventBus: emette eventi strutturati per l'Orchestrator
+        if decision_key == "approve" and self._bus:
+            try:
+                from ..core.events import DRAFT_APPROVED, CALENDAR_APPROVED
+                if ref_table == "drafts":
+                    self._bus.emit(DRAFT_APPROVED, {"draft_id": ref_id})
+                elif ref_table == "editorial_calendar":
+                    self._bus.emit(CALENDAR_APPROVED, {"calendar_id": ref_id})
+                    log.info("calendar_approved_emitted", calendar_id=ref_id)
+            except Exception as exc:  # noqa: BLE001
+                log.error("eventbus_emit_failed", error=str(exc))
+
     def _update_status(self, ref_table: str, ref_id: int, new_status: str, user_id: str) -> bool:
         """Aggiorna lo status del record nel DB. Ritorna True se trovato."""
         valid_tables = {"editorial_calendar", "drafts"}
@@ -303,10 +322,12 @@ def build_polling_handler(
     bot_token: str,
     db: "Database",
     on_draft_approved: "Callable[[int], None] | None" = None,
+    bus: "EventBus | None" = None,
 ) -> TelegramPollingHandler:
     """Factory — crea il polling handler. Se token mancante torna un no-op."""
     return TelegramPollingHandler(
         bot_token=bot_token,
         db=db,
         on_draft_approved=on_draft_approved,
+        bus=bus,
     )

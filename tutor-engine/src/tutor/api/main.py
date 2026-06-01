@@ -69,7 +69,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     bus = EventBus(db)
 
     # MetaPublisher — usato da Orchestrator, Scheduler e auto-publish callback
-    meta = build_meta_publisher(settings)
+    meta = build_meta_publisher(
+        settings.fb_page_id,
+        settings.fb_page_access_token,
+        settings.ig_user_id,
+        settings.ig_access_token,
+    )
 
     # Orchestrator — ascolta EventBus e trigera gli agenti
     orchestrator = Orchestrator(
