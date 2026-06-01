@@ -19,7 +19,7 @@ import json
 import threading
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import httpx
 
@@ -55,13 +55,21 @@ DECISION_LABEL = {
 class TelegramPollingHandler:
     """Background thread che processa i callback_query di approvazione."""
 
-    def __init__(self, bot_token: str, db: "Database", timeout: float = 10.0) -> None:
+    def __init__(
+        self,
+        bot_token: str,
+        db: "Database",
+        timeout: float = 10.0,
+        on_draft_approved: "Callable[[int], None] | None" = None,
+    ) -> None:
         self._token = bot_token
         self._db = db
         self._timeout = timeout
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
         self._last_update_id: int = 0
+        # Callback opzionale da invocare quando un draft viene approvato
+        self._on_draft_approved = on_draft_approved
 
     def start(self) -> None:
         if not self._token:
@@ -175,6 +183,20 @@ class TelegramPollingHandler:
         if chat_id and msg_id:
             self._edit_message_result(chat_id, msg_id, emoji, label, user_name, ref_table, ref_id)
 
+        # Auto-trigger: se una bozza viene approvata, avvia la pubblicazione
+        if decision_key == "approve" and ref_table == "drafts" and self._on_draft_approved:
+            try:
+                t = threading.Thread(
+                    target=self._on_draft_approved,
+                    args=(ref_id,),
+                    name=f"AutoPublish-draft-{ref_id}",
+                    daemon=True,
+                )
+                t.start()
+                log.info("auto_publish_triggered", draft_id=ref_id)
+            except Exception as exc:  # noqa: BLE001
+                log.error("auto_publish_trigger_failed", error=str(exc))
+
     def _update_status(self, ref_table: str, ref_id: int, new_status: str, user_id: str) -> bool:
         """Aggiorna lo status del record nel DB. Ritorna True se trovato."""
         valid_tables = {"editorial_calendar", "drafts"}
@@ -280,6 +302,11 @@ class TelegramPollingHandler:
 def build_polling_handler(
     bot_token: str,
     db: "Database",
+    on_draft_approved: "Callable[[int], None] | None" = None,
 ) -> TelegramPollingHandler:
     """Factory — crea il polling handler. Se token mancante torna un no-op."""
-    return TelegramPollingHandler(bot_token=bot_token, db=db)
+    return TelegramPollingHandler(
+        bot_token=bot_token,
+        db=db,
+        on_draft_approved=on_draft_approved,
+    )

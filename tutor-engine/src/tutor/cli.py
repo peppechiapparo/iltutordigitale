@@ -15,6 +15,7 @@ from .agents.content_agent import ContentAgent
 from .agents.weekly_report import WeeklyReportAgent
 from .agents.youtube_monitor import YouTubeMonitorAgent
 from .agents.social_publisher import SocialPublisherAgent
+from .agents.trend_agent import TrendResearchAgent
 from .adapters.meta_publisher import build_meta_publisher
 from .core.config import get_settings
 from .core.db import Database
@@ -230,6 +231,17 @@ def cmd_version(_: argparse.Namespace) -> int:
     return 0
 
 
+
+def cmd_run_trends(args: argparse.Namespace) -> int:
+    """Esegue il TrendResearchAgent e stampa il report."""
+    settings = get_settings()
+    db = Database(settings.db_path, MIGRATIONS_DIR)
+    db.init()
+    agent = TrendResearchAgent(db=db, bus=None)
+    report = agent.run()
+    print(f"[{report.status.upper()}] {report.summary}")
+    return 0 if report.status == "ok" else 1
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="tutor", description="Tutor Engine — Il Tutor Digitale")
     sub = p.add_subparsers(dest="command", required=True)
@@ -266,6 +278,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp_pub.add_argument("--notify", action="store_true", help="Invia report su Telegram")
     sp_pub.add_argument("--dry-run", action="store_true", help="Non pubblica, mostra solo cosa farebbe")
     sp_pub.set_defaults(func=cmd_publish)
+
+    sp_trends = sub.add_parser("trends", help="Esegui ricerca trend Google IT")
+    sp_trends.set_defaults(func=cmd_run_trends)
 
     sp_ver = sub.add_parser("version", help="Print version and exit")
     sp_ver.set_defaults(func=cmd_version)

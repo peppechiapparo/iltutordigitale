@@ -23,7 +23,9 @@ from ..agents.social_publisher import SocialPublisherAgent
 from ..adapters.meta_publisher import build_meta_publisher
 from ..core.config import Settings, get_settings
 from ..core.db import Database
+from ..core.events import EventBus
 from ..core.logging import configure_logging, get_logger
+from ..core.orchestrator import Orchestrator
 from ..core.scheduler import build_scheduler
 
 log = get_logger(__name__)
@@ -63,11 +65,42 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     app.state.llm = llm_client
 
-    scheduler = build_scheduler(settings, db, notifier, llm_client)
+    # EventBus SQLite — collegamento event-driven tra agenti
+    bus = EventBus(db)
+
+    # MetaPublisher — usato da Orchestrator, Scheduler e auto-publish callback
+    meta = build_meta_publisher(settings)
+
+    # Orchestrator — ascolta EventBus e trigera gli agenti
+    orchestrator = Orchestrator(
+        bus=bus, db=db, llm=llm_client, notifier=notifier,
+        publisher=meta, settings=settings,
+    )
+    orchestrator.start()
+    app.state.bus = bus
+    app.state.orchestrator = orchestrator
+
+    scheduler = build_scheduler(settings, db, notifier, llm_client, bus=bus, publisher=meta)
     scheduler.start()
 
+    # Callback: quando una bozza viene approvata via Telegram → pubblica subito
+    def _auto_publish_draft(draft_id: int) -> None:
+        """Triggera la pubblicazione di una singola bozza approvata."""
+        try:
+            from ..agents.social_publisher import SocialPublisherAgent
+            agent = SocialPublisherAgent(db=db, publisher=meta, dry_run=False)
+            report = agent.run()
+            if report.summary:
+                notifier.send("📤 Pubblicazione automatica", report.summary)
+            log.info("auto_publish_done", draft_id=draft_id, status=report.status)
+        except Exception as exc:  # noqa: BLE001
+            log.error("auto_publish_error", draft_id=draft_id, error=str(exc))
+            notifier.send("⚠️ Errore pubblicazione automatica", str(exc))
+
     # Telegram polling handler — processa ✅/✏️/❌ dalle bozze/calendario
-    polling = build_polling_handler(settings.telegram_bot_token, db)
+    polling = build_polling_handler(
+        settings.telegram_bot_token, db, on_draft_approved=_auto_publish_draft
+    )
     polling.start()
     app.state.polling = polling
 
@@ -196,6 +229,21 @@ def trigger_weekly_report(db: DbDep, authorization: AuthHeader = None) -> JSONRe
     """Manual on-demand run del WeeklyReportAgent."""
     _require_token(app.state.settings, authorization)
     agent = WeeklyReportAgent(db=db, llm=app.state.llm)
+    report = agent.run()
+    return JSONResponse({
+        "agent": report.agent,
+        "status": report.status,
+        "summary": report.summary,
+    })
+
+
+@app.post("/api/agents/trends/run")
+def trigger_trends(db: DbDep, authorization: AuthHeader = None) -> JSONResponse:
+    """Manual on-demand run del TrendResearchAgent."""
+    from ..agents.trend_agent import TrendResearchAgent
+    _require_token(app.state.settings, authorization)
+    bus = getattr(app.state, "bus", None)
+    agent = TrendResearchAgent(db=db, bus=bus)
     report = agent.run()
     return JSONResponse({
         "agent": report.agent,
