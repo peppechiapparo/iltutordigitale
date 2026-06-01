@@ -166,6 +166,16 @@ class CalendarAgent(LLMAgent):
     def get_tools(self) -> list[dict]:
         return CALENDAR_TOOLS
 
+    def _build_initial_message(self, context: dict) -> str:
+        week_start = context["week_start"]
+        week_end = context["week_end"]
+        recent = context["recent_topics"]
+        return (
+            f"Proponi il calendario editoriale per la settimana {week_start}–{week_end}. "
+            f"Topic recenti da evitare: {recent}. "
+            "Chiama save_calendar con le 5 voci (lun-ven), poi chiama report_findings con lista vuota."
+        )
+
     def _dispatch_tool(self, tool_name: str, tool_input: dict) -> str:
         """Intercetta save_calendar (agent-specific) prima del dispatch globale."""
         if tool_name != "save_calendar":
